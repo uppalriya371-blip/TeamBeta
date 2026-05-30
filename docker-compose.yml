@@ -3,75 +3,65 @@ version: '3.8'
 services:
   db:
     image: postgres:15-alpine
-    container_name: apiguard-db
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: apiguard
+      POSTGRES_PASSWORD: apiguard_secret
       POSTGRES_DB: apiguard
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d apiguard"]
-      interval: 5s
+      test: ['CMD-SHELL', 'pg_isready -U apiguard']
+      interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: apiguard-cache
+    restart: unless-stopped
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
       timeout: 5s
       retries: 5
 
   api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: apiguard-api
+    build: ./backend
     command: node server.js
+    restart: unless-stopped
     ports:
-      - "5000:5000"
+      - '5000:5000'
     environment:
-      - PORT=5000
-      - NODE_ENV=development
-      - DB_HOST=db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=apiguard
-      - DB_PORT=5432
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - JWT_SECRET=apiguard_super_secret_jwt_key_2026
-      - JWT_REFRESH_SECRET=apiguard_super_secret_jwt_refresh_key_2026
+      DATABASE_URL: postgresql://apiguard:apiguard_secret@db:5432/apiguard
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: 5000
+      JWT_SECRET: change-me-in-production
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:5000/api/health || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
   worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: apiguard-worker
+    build: ./backend
     command: node worker.js
+    restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - DB_HOST=db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=apiguard
-      - DB_PORT=5432
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      DATABASE_URL: postgresql://apiguard:apiguard_secret@db:5432/apiguard
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       db:
         condition: service_healthy
@@ -79,16 +69,15 @@ services:
         condition: service_healthy
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: apiguard-frontend
+    build: .
+    command: npx vite --host
+    restart: unless-stopped
     ports:
-      - "5173:5173"
+      - '5173:5173'
+    environment:
+      VITE_API_URL: http://localhost:5000
     depends_on:
       - api
-    environment:
-      - VITE_API_URL=http://api:5000
 
 volumes:
   pgdata:

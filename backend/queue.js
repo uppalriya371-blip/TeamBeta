@@ -7,24 +7,30 @@ dotenv.config();
 const connection = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379'),
-  maxRetriesPerRequest: null, // Required by BullMQ
+  maxRetriesPerRequest: null,
 });
 
 connection.on('error', (err) => {
-  console.error('Redis connection error:', err);
+  console.error('[Queue] Redis connection error:', err.message);
+});
+
+connection.on('connect', () => {
+  console.log('[Queue] Redis connected.');
 });
 
 export const redisConnection = connection;
+
 export const scanQueue = new Queue('scan-queue', {
   connection,
   defaultJobOptions: {
     attempts: 3,
     backoff: {
-      type: 'fixed',
+      type: 'exponential',
       delay: 5000,
     },
     removeOnComplete: true,
+    removeOnFail: false,
   },
 });
 
-console.log('BullMQ Scan Queue initialized.');
+console.log('[Queue] BullMQ Scan Queue initialized.');

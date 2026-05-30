@@ -3,15 +3,15 @@ import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadialBarChart, RadialBar
 } from "recharts";
+import { useAppStore } from "./store";
 
 /* ═══════════════════════════════════════════════════════════
    GLOBAL STYLES
-═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-  
     --navy0: #0a0e1a;
     --navy1: #0d1228;
     --navy2: #111830;
@@ -89,8 +89,8 @@ const GLOBAL_CSS = `
 `;
 
 /* ═══════════════════════════════════════════════════════════
-   DATA
-═══════════════════════════════════════════════════════════ */
+   MOCK/FALLBACK CHART DATA
+   ═══════════════════════════════════════════════════════════ */
 const SCAN_TREND = [
   {m:"Jan",scans:120,issues:34,resolved:28},{m:"Feb",scans:180,issues:52,resolved:47},
   {m:"Mar",scans:240,issues:61,resolved:58},{m:"Apr",scans:310,issues:48,resolved:45},
@@ -110,79 +110,7 @@ const THREAT_PIE = [
 const WEEKLY_SCANS = [
   {d:"Mon",v:82},{d:"Tue",v:140},{d:"Wed",v:95},{d:"Thu",v:210},{d:"Fri",v:175},{d:"Sat",v:60},{d:"Sun",v:44},
 ];
-const SCORE_RADIAL = [{name:"Score",value:94,fill:"#00ff94"}];
 
-const RECENT_SCANS = [
-  {name:"Payment Gateway v3",method:"POST /checkout",sev:"critical",score:24,time:"2m ago",src:"Postman",threats:8},
-  {name:"Auth Microservice",method:"GET /oauth/token",sev:"high",score:61,time:"14m ago",src:"GitHub",threats:5},
-  {name:"User Profile API",method:"PUT /users/{id}",sev:"safe",score:98,time:"1h ago",src:"OpenAPI",threats:0},
-  {name:"Inventory Service",method:"GET /products",sev:"medium",score:73,time:"2h ago",src:"CI/CD",threats:3},
-  {name:"Webhook Handler",method:"POST /events",sev:"safe",score:97,time:"3h ago",src:"GitHub",threats:0},
-  {name:"Admin Dashboard",method:"DELETE /users",sev:"high",score:55,time:"5h ago",src:"OpenAPI",threats:6},
-];
-const PIPELINES = [
-  {name:"api-gateway",branch:"main",status:"pass",time:"1m 23s",commit:"feat: rate limiting",ago:"2m"},
-  {name:"auth-service",branch:"release/2.1",status:"fail",time:"2m 01s",commit:"fix: JWT expiry",ago:"8m"},
-  {name:"payment-svc",branch:"develop",status:"running",time:"0m 47s",commit:"chore: deps bump",ago:"now"},
-  {name:"user-api",branch:"main",status:"pass",time:"1m 08s",commit:"refactor: middleware",ago:"1h"},
-];
-const ENDPOINTS_DATA = [
-  {method:"GET",path:"/api/v1/users",status:"safe",latency:"42ms",calls:"12.4k"},
-  {method:"POST",path:"/api/v1/auth/login",status:"high",latency:"180ms",calls:"8.1k"},
-  {method:"PUT",path:"/api/v1/payments",status:"critical",latency:"320ms",calls:"3.2k"},
-  {method:"DELETE",path:"/api/v1/admin/users",status:"critical",latency:"95ms",calls:"0.4k"},
-  {method:"GET",path:"/api/v1/products",status:"safe",latency:"38ms",calls:"21.7k"},
-  {method:"POST",path:"/api/v1/webhooks",status:"medium",latency:"210ms",calls:"6.8k"},
-];
-const GITHUB_REPOS = [
-  {name:"acme/payment-api",branch:"main",prs:3,issues:2,score:61,scan:"5m ago",status:"high"},
-  {name:"acme/auth-service",branch:"main",prs:1,issues:5,score:55,scan:"20m ago",status:"critical"},
-  {name:"acme/api-gateway",branch:"release/3",prs:0,issues:0,score:97,scan:"1h ago",status:"safe"},
-  {name:"acme/user-api",branch:"develop",prs:2,issues:1,score:83,scan:"2h ago",status:"medium"},
-  {name:"acme/inventory",branch:"main",prs:0,issues:0,score:99,scan:"4h ago",status:"safe"},
-  {name:"acme/webhook-svc",branch:"main",prs:1,issues:3,score:72,scan:"6h ago",status:"medium"},
-];
-const CICD_INTEGRATIONS = [
-  {name:"GitHub Actions",icon:"ti-brand-github",on:true,runs:124,ok:118},
-  {name:"GitLab CI",icon:"ti-brand-gitlab",on:false,runs:0,ok:0},
-  {name:"Jenkins",icon:"ti-settings-2",on:true,runs:48,ok:42},
-  {name:"CircleCI",icon:"ti-rotate-clockwise-2",on:false,runs:0,ok:0},
-  {name:"AWS CodePipeline",icon:"ti-brand-aws",on:true,runs:31,ok:31},
-  {name:"Azure DevOps",icon:"ti-brand-azure",on:false,runs:0,ok:0},
-];
-const REPORTS_LIST = [
-  {name:"Payment API — Security Audit Q2 2025",date:"Jun 12, 2025",pages:18,score:61,size:"2.4 MB"},
-  {name:"Auth Service — Full Penetration Report",date:"Jun 8, 2025",pages:24,score:55,size:"3.1 MB"},
-  {name:"API Gateway — Compliance (SOC2)",date:"Jun 1, 2025",pages:12,score:97,size:"1.8 MB"},
-  {name:"User API — Monthly Summary",date:"May 28, 2025",pages:9,score:83,size:"1.2 MB"},
-  {name:"Inventory — Full OWASP Scan",date:"May 15, 2025",pages:6,score:99,size:"0.9 MB"},
-];
-const POSTMAN_COLS = [
-  {name:"Payment API Collection",reqs:24,issues:4,status:"high",updated:"1h ago"},
-  {name:"Auth Service Tests",reqs:18,issues:0,status:"safe",updated:"3h ago"},
-  {name:"User Management API",reqs:31,issues:2,status:"medium",updated:"1d ago"},
-  {name:"Admin Panel Endpoints",reqs:12,issues:7,status:"critical",updated:"2d ago"},
-];
-const OPENAPI_EPS = [
-  {method:"GET",path:"/pets",desc:"List all pets",status:"safe"},
-  {method:"POST",path:"/pets",desc:"Create a new pet",status:"high"},
-  {method:"GET",path:"/pets/{id}",desc:"Get pet by ID",status:"medium"},
-  {method:"DELETE",path:"/pets/{id}",desc:"Delete a pet",status:"critical"},
-  {method:"PUT",path:"/pets/{id}",desc:"Update a pet",status:"safe"},
-  {method:"GET",path:"/owners",desc:"List all owners",status:"safe"},
-  {method:"POST",path:"/auth/login",desc:"Authenticate user",status:"high"},
-];
-const ALERTS = [
-  {id:1,type:"critical",msg:"SQL Injection detected in POST /api/v1/payments",time:"2m ago",read:false},
-  {id:2,type:"high",msg:"Rate limit bypassed on /auth/login — 2400 req/min",time:"8m ago",read:false},
-  {id:3,type:"medium",msg:"CORS wildcard origin in inventory-svc",time:"1h ago",read:true},
-  {id:4,type:"info",msg:"GitHub Actions pipeline completed — api-gateway",time:"2h ago",read:true},
-  {id:5,type:"critical",msg:"Admin endpoint DELETE /users exposed without auth",time:"5h ago",read:true},
-];
-
-/* ═══════════════════════════════════════════════════════════
-   HELPERS
-═══════════════════════════════════════════════════════════ */
 const SEV = {
   critical:{color:"#fc8181",bg:"rgba(252,129,129,0.12)",border:"rgba(252,129,129,0.28)",label:"CRITICAL"},
   high:{color:"#f6ad55",bg:"rgba(246,173,85,0.12)",border:"rgba(246,173,85,0.28)",label:"HIGH"},
@@ -196,10 +124,52 @@ const SEV = {
 };
 const METHOD_CLR = {GET:"#68d391",POST:"#4299e1",PUT:"#f6ad55",DELETE:"#fc8181",PATCH:"#00d4ff"};
 
+const PETSTORE_V1 = `swagger: "2.0"
+info:
+  title: "Swagger Petstore v1"
+  version: "1.0.0"
+paths:
+  /pets:
+    get:
+      summary: "List all pets"
+    post:
+      summary: "Create a new pet"
+  /pets/{id}:
+    get:
+      summary: "Get pet by ID"
+  /admin/users:
+    delete:
+      summary: "Remove user database entries"
+`;
+
+const PETSTORE_V2 = `swagger: "2.0"
+info:
+  title: "Swagger Petstore v2"
+  version: "2.0.0"
+paths:
+  /pets:
+    get:
+      summary: "List all pets"
+    post:
+      summary: "Create a new pet"
+  /pets/{id}:
+    get:
+      summary: "Get pet by ID"
+    put:
+      summary: "Update pet profile details and status"
+  /pets/{id}/owner:
+    get:
+      summary: "Retrieve pet owner info"
+`;
+
+/* ═══════════════════════════════════════════════════════════
+   HELPERS COMPONENTS
+   ═══════════════════════════════════════════════════════════ */
 function Chip({status,small=false}){
   const s=SEV[status]||SEV.medium;
   return <span style={{fontSize:small?8:9,fontWeight:700,letterSpacing:"0.1em",fontFamily:"var(--mono)",color:s.color,background:s.bg,border:`1px solid ${s.border}`,padding:small?"2px 6px":"3px 8px",borderRadius:4}}>{s.label}</span>;
 }
+
 function LiveDot({color="var(--green2)",size=6}){
   return(
     <span style={{position:"relative",display:"inline-flex",alignItems:"center",justifyContent:"center",width:size+6,height:size+6}}>
@@ -208,11 +178,12 @@ function LiveDot({color="var(--green2)",size=6}){
     </span>
   );
 }
+
 function AnimNum({val,suffix="",prefix=""}){
-  const [n,setN]=useState(0);
+  const [n,setN] = useState(0);
   useEffect(()=>{
     let s=0; let reqId;
-    const end=parseFloat(val); const dur=1400;
+    const end=parseFloat(val); const dur=1000;
     const step=ts=>{
       if(!s)s=ts;
       const p=Math.min((ts-s)/dur,1);
@@ -224,6 +195,7 @@ function AnimNum({val,suffix="",prefix=""}){
   },[val]);
   return <span>{prefix}{typeof val==="number"&&val%1===0?Math.floor(n).toLocaleString():n}{suffix}</span>;
 }
+
 function ScoreArc({score,color,size=64}){
   const r=26,c=2*Math.PI*r,fill=(score/100)*c;
   return(
@@ -239,6 +211,7 @@ function ScoreArc({score,color,size=64}){
     </svg>
   );
 }
+
 const CustomTooltip=({active,payload,label})=>{
   if(!active||!payload?.length)return null;
   return(
@@ -249,9 +222,6 @@ const CustomTooltip=({active,payload,label})=>{
   );
 };
 
-/* ═══════════════════════════════════════════════════════════
-   BACKGROUND BLOBS
-═══════════════════════════════════════════════════════════ */
 function BgBlobs(){
   return(
     <div style={{position:"fixed",inset:0,overflow:"hidden",pointerEvents:"none",zIndex:0}}>
@@ -263,33 +233,43 @@ function BgBlobs(){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   LOGIN PAGE
-═══════════════════════════════════════════════════════════ */
-function LoginPage({onLogin}){
-  const [email,setEmail]=useState("");
-  const [pass,setPass]=useState("");
-  const [loading,setLoading]=useState(false);
-  const [err,setErr]=useState("");
-  const [showPass,setShowPass]=useState(false);
+   LOGIN & SIGNUP PAGE
+   ═══════════════════════════════════════════════════════════ */
+function LoginPage(){
+  const { login, signup, authLoading, authError } = useAppStore();
+  const [isRegister, setIsRegister] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [err, setErr] = useState("");
 
-  const handle=()=>{
-    if(!email||!pass){setErr("Please fill in all fields.");return;}
-    
-    // Email format validation using Regex
+  const handle = async () => {
+    if (!email || !pass || (isRegister && !name)) {
+      setErr("Please fill in all fields.");
+      return;
+    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if(!emailRegex.test(email)){
+    if (!emailRegex.test(email)) {
       setErr("Please enter a valid email format.");
       return;
     }
-
-    setErr("");setLoading(true);
-    setTimeout(()=>{setLoading(false);onLogin({name:"Kartikeya Shukla",email,role:"Platform Lead"});},1600);
+    setErr("");
+    
+    let success = false;
+    if (isRegister) {
+      success = await signup(name, email, pass);
+    } else {
+      success = await login(email, pass);
+    }
+    if (!success) {
+      setErr(authError || "Authentication failed.");
+    }
   };
 
   return(
     <div style={{minHeight:"100vh",display:"flex",position:"relative",overflow:"hidden"}}>
       <BgBlobs/>
-      {/* LEFT PANEL */}
       <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 80px",position:"relative",zIndex:1}}>
         <div style={{animation:"fadeUp .6s ease"}}>
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:48}}>
@@ -310,14 +290,12 @@ function LoginPage({onLogin}){
             The only API security platform that integrates directly into your dev workflow — from OpenAPI specs to CI/CD pipelines.
           </p>
 
-          {/* Feature pills */}
           <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
             {["OWASP Top 10","GitHub Actions","Postman Sync","PDF Reports","Real-time Alerts","CI/CD Guard"].map(f=>(
               <span key={f} style={{fontSize:11,fontWeight:600,color:"var(--blue2)",background:"rgba(66,153,225,0.1)",border:"1px solid rgba(66,153,225,0.2)",padding:"5px 12px",borderRadius:20,fontFamily:"var(--mono)",letterSpacing:"0.04em"}}>✓ {f}</span>
             ))}
           </div>
 
-          {/* Stat row */}
           <div style={{display:"flex",gap:40,marginTop:48,paddingTop:40,borderTop:"1px solid var(--b1)"}}>
             {[{v:"1,284",l:"APIs Protected"},{v:"99.8%",l:"Uptime SLA"},{v:"< 2s",l:"Scan Speed"}].map(s=>(
               <div key={s.l}>
@@ -329,15 +307,24 @@ function LoginPage({onLogin}){
         </div>
       </div>
 
-      {/* RIGHT PANEL */}
       <div style={{width:480,display:"flex",alignItems:"center",justifyContent:"center",padding:"60px 40px",position:"relative",zIndex:1}}>
         <div className="glass" style={{width:"100%",maxWidth:400,padding:"40px 36px",animation:"fadeUp .6s ease .1s both"}}>
-          <h2 style={{fontSize:24,fontWeight:800,marginBottom:6}}>Welcome back</h2>
-          <p style={{fontSize:13,color:"var(--t2)",marginBottom:32}}>Sign in to your ApiGuard account</p>
+          <h2 style={{fontSize:24,fontWeight:800,marginBottom:6}}>{isRegister ? "Create Account" : "Welcome back"}</h2>
+          <p style={{fontSize:13,color:"var(--t2)",marginBottom:32}}>{isRegister ? "Join the ApiGuard SaaS platform" : "Sign in to your ApiGuard account"}</p>
 
-          {err&&<div style={{background:"rgba(252,129,129,0.1)",border:"1px solid rgba(252,129,129,0.25)",borderRadius:8,padding:"10px 14px",fontSize:12,color:"var(--red)",marginBottom:18}}>{err}</div>}
+          {(err || authError) && <div style={{background:"rgba(252,129,129,0.1)",border:"1px solid rgba(252,129,129,0.25)",borderRadius:8,padding:"10px 14px",fontSize:12,color:"var(--red)",marginBottom:18}}>{err || authError}</div>}
 
-          {/* Email */}
+          {isRegister && (
+            <div style={{marginBottom:16}}>
+              <label style={{fontSize:12,fontWeight:600,color:"var(--t2)",display:"block",marginBottom:8,letterSpacing:"0.04em"}}>FULL NAME</label>
+              <div style={{position:"relative"}}>
+                <i className="ti ti-user" style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:15,color:"var(--t3)"}}/>
+                <input value={name} onChange={e=>setName(e.target.value)} type="text" placeholder="John Doe"
+                  style={{width:"100%",paddingLeft:42,paddingRight:14,paddingTop:12,paddingBottom:12,background:"var(--navy3)",border:"1px solid var(--b2)",borderRadius:10,color:"var(--t1)",fontSize:14,transition:"border-color .2s"}}/>
+              </div>
+            </div>
+          )}
+
           <div style={{marginBottom:16}}>
             <label style={{fontSize:12,fontWeight:600,color:"var(--t2)",display:"block",marginBottom:8,letterSpacing:"0.04em"}}>EMAIL ADDRESS</label>
             <div style={{position:"relative"}}>
@@ -347,11 +334,9 @@ function LoginPage({onLogin}){
             </div>
           </div>
 
-          {/* Password */}
           <div style={{marginBottom:24}}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
               <label style={{fontSize:12,fontWeight:600,color:"var(--t2)",letterSpacing:"0.04em"}}>PASSWORD</label>
-              <a href="#" style={{fontSize:12,color:"var(--blue2)",textDecoration:"none"}}>Forgot password?</a>
             </div>
             <div style={{position:"relative"}}>
               <i className="ti ti-lock" style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:15,color:"var(--t3)"}}/>
@@ -364,50 +349,33 @@ function LoginPage({onLogin}){
             </div>
           </div>
 
-          {/* Sign in btn */}
-          <button onClick={handle} disabled={loading}
-            style={{width:"100%",padding:"13px",background:"linear-gradient(135deg,var(--blue),var(--indigo))",color:"#fff",border:"none",borderRadius:10,fontWeight:700,fontSize:14,cursor:loading?"not-allowed":"pointer",opacity:loading?0.8:1,transition:"opacity .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:8,letterSpacing:"0.03em",boxShadow:"0 8px 24px rgba(66,153,225,0.35)"}}>
-            {loading?<><i className="ti ti-loader-2" style={{animation:"spin 1s linear infinite"}}/>Authenticating…</>:<>Sign In <i className="ti ti-arrow-right"/></>}
+          <button onClick={handle} disabled={authLoading}
+            style={{width:"100%",padding:"13px",background:"linear-gradient(135deg,var(--blue),var(--indigo))",color:"#fff",border:"none",borderRadius:10,fontWeight:700,fontSize:14,cursor:authLoading?"not-allowed":"pointer",opacity:authLoading?0.8:1,transition:"opacity .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:8,letterSpacing:"0.03em",boxShadow:"0 8px 24px rgba(66,153,225,0.35)"}}>
+            {authLoading ? <><i className="ti ti-loader-2" style={{animation:"spin 1s linear infinite"}}/>Processing…</> : <>{isRegister ? "Sign Up" : "Sign In"} <i className="ti ti-arrow-right"/></>}
           </button>
 
-          <div style={{display:"flex",alignItems:"center",gap:12,margin:"24px 0"}}>
-            <div style={{flex:1,height:1,background:"var(--b1)"}}/>
-            <span style={{fontSize:12,color:"var(--t3)"}}>OR</span>
-            <div style={{flex:1,height:1,background:"var(--b1)"}}/>
-          </div>
-
-          {/* OAuth */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            {[{icon:"ti-brand-github",label:"GitHub"},{icon:"ti-brand-google",label:"Google"}].map(p=>(
-              <button key={p.label} style={{padding:"10px",background:"var(--navy3)",border:"1px solid var(--b2)",borderRadius:10,color:"var(--t1)",fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontWeight:600,transition:"border-color .2s"}}
-                onMouseEnter={e=>e.currentTarget.style.borderColor="var(--b3)"}
-                onMouseLeave={e=>e.currentTarget.style.borderColor="var(--b2)"}>
-                <i className={`ti ${p.icon}`} style={{fontSize:16}}/>{p.label}
-              </button>
-            ))}
-          </div>
-
           <p style={{textAlign:"center",fontSize:12,color:"var(--t3)",marginTop:24}}>
-            Don't have an account? <a href="#" style={{color:"var(--blue2)",textDecoration:"none",fontWeight:600}}>Start free trial →</a>
+            {isRegister ? "Already have an account?" : "Don't have an account?"} <a href="#" onClick={(e)=>{e.preventDefault(); setIsRegister(!isRegister); setErr("");}} style={{color:"var(--blue2)",textDecoration:"none",fontWeight:600}}>{isRegister ? "Sign in instead →" : "Start free trial →"}</a>
           </p>
         </div>
       </div>
     </div>
   );
 }
+
 /* ═══════════════════════════════════════════════════════════
    SIDEBAR NAV
-═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 const NAV_ITEMS = [
   {id:"dashboard",icon:"ti-layout-dashboard",label:"Dashboard",section:"MAIN"},
   {id:"scan",icon:"ti-shield-search",label:"Free Scan",section:"MAIN",badge:"FREE"},
   {id:"endpoints",icon:"ti-api",label:"Endpoints",section:"MAIN"},
-  {id:"alerts",icon:"ti-bell",label:"Alerts",section:"MAIN",badge:"5"},
+  {id:"alerts",icon:"ti-bell",label:"Alerts",section:"MAIN"},
   {id:"openapi",icon:"ti-file-code",label:"OpenAPI",section:"INTEGRATIONS"},
   {id:"postman",icon:"ti-brand-postman",label:"Postman",section:"INTEGRATIONS"},
   {id:"github",icon:"ti-brand-github",label:"GitHub",section:"INTEGRATIONS"},
   {id:"cicd",icon:"ti-git-branch",label:"CI/CD",section:"INTEGRATIONS"},
-  {id:"pipelines",icon:"ti-topology-star-3",label:"Pipelines",section:"INTEGRATIONS"},
+  {id:"infra",icon:"ti-server",label:"Infrastructure",section:"INTEGRATIONS",badge:"LIVE"},
   {id:"reports",icon:"ti-file-analytics",label:"PDF Reports",section:"ANALYTICS"},
   {id:"analytics",icon:"ti-chart-line",label:"Analytics",section:"ANALYTICS"},
   {id:"settings",icon:"ti-settings",label:"Settings",section:"ACCOUNT"},
@@ -416,10 +384,12 @@ const NAV_ITEMS = [
 ];
 
 function Sidebar({active,setActive,user,onLogout}){
+  const alerts = useAppStore(s => s.alerts);
+  const unreadAlerts = alerts.filter(a => !a.read).length;
   const sections=[...new Set(NAV_ITEMS.map(n=>n.section))];
+  
   return(
     <div style={{width:230,background:"rgba(13,18,40,0.95)",borderRight:"1px solid var(--b1)",display:"flex",flexDirection:"column",flexShrink:0,position:"relative",zIndex:10,backdropFilter:"blur(20px)"}}>
-      {/* Logo */}
       <div style={{padding:"22px 20px 18px",borderBottom:"1px solid var(--b1)"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div style={{width:38,height:38,borderRadius:10,background:"linear-gradient(135deg,var(--blue),var(--indigo))",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 0 16px rgba(66,153,225,0.4)"}}>
@@ -432,25 +402,27 @@ function Sidebar({active,setActive,user,onLogout}){
         </div>
       </div>
 
-      {/* Status */}
       <div style={{padding:"10px 20px",borderBottom:"1px solid var(--b1)",display:"flex",alignItems:"center",gap:8}}>
         <LiveDot color="var(--green2)" size={5}/>
         <span style={{fontSize:9,color:"#00ff94",fontFamily:"var(--mono)",fontWeight:600,letterSpacing:"0.1em"}}>ALL SYSTEMS NOMINAL</span>
       </div>
 
-      {/* Nav */}
       <nav style={{flex:1,overflowY:"auto",padding:"12px 10px"}}>
         {sections.map(sec=>(
           <div key={sec} style={{marginBottom:8}}>
             <div style={{fontSize:9,color:"var(--t3)",fontWeight:700,letterSpacing:"0.14em",padding:"6px 12px 4px",fontFamily:"var(--mono)"}}>{sec}</div>
             {NAV_ITEMS.filter(n=>n.section===sec).map(item=>{
               const isA=active===item.id;
+              let badgeText = item.badge;
+              if(item.id === "alerts" && unreadAlerts > 0) {
+                badgeText = unreadAlerts.toString();
+              }
               return(
                 <button key={item.id} className="nav-btn" onClick={()=>setActive(item.id)}
                   style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:9,marginBottom:1,background:isA?"linear-gradient(135deg,rgba(66,153,225,0.2),rgba(159,122,234,0.1))":"transparent",border:isA?"1px solid rgba(66,153,225,0.2)":"1px solid transparent",transition:"all .15s"}}>
                   <i className={`ti ${item.icon}`} style={{fontSize:16,color:isA?"var(--blue2)":"var(--t3)",flexShrink:0}}/>
                   <span className="nav-label" style={{fontSize:12,fontWeight:isA?700:500,color:isA?"var(--t1)":"var(--t2)",flex:1,letterSpacing:"0.01em"}}>{item.label}</span>
-                  {item.badge&&<span style={{fontSize:8,fontWeight:800,background:item.badge==="FREE"?"var(--green2)":isA?"var(--blue)":"var(--navy5)",color:item.badge==="FREE"?"#000":"var(--t1)",padding:"2px 6px",borderRadius:10,fontFamily:"var(--mono)",letterSpacing:"0.05em"}}>{item.badge}</span>}
+                  {badgeText&&<span style={{fontSize:8,fontWeight:800,background:badgeText==="FREE"?"var(--green2)":badgeText==="LIVE"?"var(--cyan)":isA?"var(--blue)":"var(--navy5)",color:badgeText==="FREE"||badgeText==="LIVE"?"#000":"var(--t1)",padding:"2px 6px",borderRadius:10,fontFamily:"var(--mono)",letterSpacing:"0.05em"}}>{badgeText}</span>}
                   {isA&&<div style={{width:3,height:16,borderRadius:2,background:"var(--blue)",flexShrink:0}}/>}
                 </button>
               );
@@ -459,32 +431,15 @@ function Sidebar({active,setActive,user,onLogout}){
         ))}
       </nav>
 
-      {/* Help card */}
       <div style={{margin:"0 10px 10px",padding:"14px 16px",borderRadius:12,background:"linear-gradient(135deg,rgba(66,153,225,0.15),rgba(159,122,234,0.1))",border:"1px solid rgba(66,153,225,0.2)"}}>
         <div style={{fontSize:12,fontWeight:700,marginBottom:4}}>Need help?</div>
         <div style={{fontSize:11,color:"var(--t2)",marginBottom:10}}>Check our docs or reach out to support</div>
-        {/* Replace your existing DOCUMENTATION button with this: */}
-{/* In your Sidebar component */}
-<button 
-  onClick={() => setActive('docs')} // This tells the App to switch to DocsView
-  style={{
-    width: "100%", 
-    padding: "7px", 
-    background: "linear-gradient(135deg, var(--blue), var(--indigo))", 
-    color: "#fff", 
-    border: "none", 
-    borderRadius: "7px", 
-    fontSize: "11px", 
-    fontWeight: 700, 
-    cursor: "pointer", 
-    letterSpacing: "0.04em"
-  }}
->
-  DOCUMENTATION
-</button>
+        <button onClick={() => setActive('docs')}
+          style={{width: "100%", padding: "7px", background: "linear-gradient(135deg, var(--blue), var(--indigo))", color: "#fff", border: "none", borderRadius: "7px", fontSize: "11px", fontWeight: 700, cursor: "pointer", letterSpacing: "0.04em"}}>
+          DOCUMENTATION
+        </button>
       </div>
 
-      {/* User */}
       <div style={{padding:"14px 16px",borderTop:"1px solid var(--b1)"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div style={{width:34,height:34,borderRadius:9,background:"linear-gradient(135deg,var(--blue),var(--indigo))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#fff",flexShrink:0}}>
@@ -505,11 +460,14 @@ function Sidebar({active,setActive,user,onLogout}){
 
 /* ═══════════════════════════════════════════════════════════
    TOPBAR
-═══════════════════════════════════════════════════════════ */
-function Topbar({page,user,alerts,setActive}){
+   ═══════════════════════════════════════════════════════════ */
+function Topbar({page,user,setActive}){
   const [time,setTime]=useState(new Date());
+  const alerts = useAppStore(s => s.alerts);
   const unread=alerts.filter(a=>!a.read).length;
+  
   useEffect(()=>{const iv=setInterval(()=>setTime(new Date()),1000);return()=>clearInterval(iv);},[]);
+  
   return(
     <div style={{height:60,background:"rgba(13,18,40,0.9)",borderBottom:"1px solid var(--b1)",padding:"0 28px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0,backdropFilter:"blur(20px)",zIndex:9,position:"relative"}}>
       <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -536,33 +494,34 @@ function Topbar({page,user,alerts,setActive}){
 
 /* ═══════════════════════════════════════════════════════════
    DASHBOARD VIEW
-═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function DashboardView({user}){
+  const scans = useAppStore(s => s.scans);
+  const pipelines = useAppStore(s => s.pipelineRuns);
+
+  // Compute live stats from scans list
+  const totalScans = scans.length;
+  const criticalThreats = scans.reduce((acc, s) => acc + (s.sev === 'critical' ? s.threats : 0), 0);
+  const completedScans = scans.filter(s => s.score !== undefined);
+  const avgScore = completedScans.length > 0 ? Math.round(completedScans.reduce((acc, s) => acc + s.score, 0) / completedScans.length) : 94;
+  const runningPipelines = pipelines.filter(p => p.status === 'running').length;
+
   const METRICS=[
-    {label:"Total APIs Scanned",value:1284,suffix:"",prefix:"",icon:"ti-api",color:"var(--blue)",glow:"rgba(66,153,225,0.25)",delta:"+12%",up:true},
-    {label:"Critical Threats",value:23,suffix:"",prefix:"",icon:"ti-alert-triangle",color:"var(--red)",glow:"rgba(252,129,129,0.2)",delta:"-8%",up:false},
-    {label:"Security Score",value:94,suffix:"%",prefix:"",icon:"ti-shield-check",color:"var(--green2)",glow:"rgba(0,255,148,0.2)",delta:"+2.1%",up:true},
-    {label:"Live Pipelines",value:17,suffix:"",prefix:"",icon:"ti-git-branch",color:"var(--amber)",glow:"rgba(246,173,85,0.2)",delta:"+3",up:true},
+    {label:"Total APIs Scanned",value:totalScans || 1284,suffix:"",prefix:"",icon:"ti-api",color:"var(--blue)",glow:"rgba(66,153,225,0.25)",delta:"+12%",up:true},
+    {label:"Critical Threats",value:criticalThreats,suffix:"",prefix:"",icon:"ti-alert-triangle",color:"var(--red)",glow:"rgba(252,129,129,0.2)",delta:"-8%",up:false},
+    {label:"Security Score",value:avgScore,suffix:"%",prefix:"",icon:"ti-shield-check",color:"var(--green2)",glow:"rgba(0,255,148,0.2)",delta:"+2.1%",up:true},
+    {label:"Active Pipelines",value:runningPipelines,suffix:"",prefix:"",icon:"ti-git-branch",color:"var(--amber)",glow:"rgba(246,173,85,0.2)",delta:"+3",up:true},
   ];
+
   return(
     <div style={{display:"flex",flexDirection:"column",gap:20}}>
-      {/* Welcome */}
       <div className="stagger-1" style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div>
           <h2 style={{fontSize:22,fontWeight:800,letterSpacing:"-0.3px"}}>Glad to see you again, <span style={{background:"linear-gradient(135deg,var(--blue),var(--cyan))",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{user.name.split(" ")[0]}.</span></h2>
-          <p style={{fontSize:13,color:"var(--t2)",marginTop:4}}>Here's your API security overview for today, May 24 2026</p>
-        </div>
-        <div style={{display:"flex",gap:10}}>
-          <button style={{padding:"9px 18px",background:"linear-gradient(135deg,var(--blue),var(--indigo))",color:"#fff",border:"none",borderRadius:9,fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:"0.04em",boxShadow:"0 4px 16px rgba(66,153,225,0.3)"}}>
-            <i className="ti ti-plus" style={{marginRight:6}}/>NEW SCAN
-          </button>
-          <button style={{padding:"9px 18px",background:"var(--navy3)",color:"var(--t1)",border:"1px solid var(--b2)",borderRadius:9,fontWeight:600,fontSize:12,cursor:"pointer"}}>
-            <i className="ti ti-download" style={{marginRight:6}}/>EXPORT
-          </button>
+          <p style={{fontSize:13,color:"var(--t2)",marginTop:4}}>Here's your API security overview for today</p>
         </div>
       </div>
 
-      {/* Metric Cards */}
       <div className="stagger-2" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14}}>
         {METRICS.map((m,i)=>(
           <div key={i} className="glass card-hover" style={{padding:"22px 20px"}}>
@@ -576,21 +535,19 @@ function DashboardView({user}){
               <AnimNum val={m.value} suffix={m.suffix} prefix={m.prefix}/>
             </div>
             <div style={{fontSize:11,color:"var(--t3)",marginTop:4,letterSpacing:"0.05em",fontWeight:600}}>{m.label}</div>
-            <div style={{marginTop:14,height:2,background:"rgba(255,255,255,0.05)",borderRadius:2}}>
-              <div style={{height:"100%",width:`${Math.min(100,m.value/13)}%`,background:`linear-gradient(90deg,${m.color}60,${m.color})`,borderRadius:2}}/>
+            <div style={{margin_top:14,height:2,background:"rgba(255,255,255,0.05)",borderRadius:2}}>
+              <div style={{height:"100%",width:`${Math.min(100, m.value / 13 * 10)}%`,background:`linear-gradient(90deg,${m.color}60,${m.color})`,borderRadius:2}}/>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Row 2: Area Chart + Radial + Quick Stats */}
       <div className="stagger-3" style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:14}}>
-        {/* Scan Trend */}
         <div className="glass" style={{padding:"22px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
             <div>
               <div style={{fontWeight:700,fontSize:14}}>Scan Activity Overview</div>
-              <div style={{fontSize:11,color:"var(--t3)",marginTop:2}}>+5 more this year vs 2024</div>
+              <div style={{fontSize:11,color:"var(--t3)",marginTop:2}}>API Guard performance tracking</div>
             </div>
             <div style={{display:"flex",gap:16,fontSize:11}}>
               {[{c:"var(--blue)",l:"Scans"},{c:"var(--red)",l:"Issues"},{c:"var(--green2)",l:"Resolved"}].map(x=>(
@@ -604,18 +561,9 @@ function DashboardView({user}){
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={SCAN_TREND} margin={{top:5,right:10,left:-20,bottom:0}}>
               <defs>
-                <linearGradient id="gScans" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4299e1" stopOpacity={0.35}/>
-                  <stop offset="95%" stopColor="#4299e1" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="gIssues" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#fc8181" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#fc8181" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="gResolved" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#00ff94" stopOpacity={0.25}/>
-                  <stop offset="95%" stopColor="#00ff94" stopOpacity={0}/>
-                </linearGradient>
+                <linearGradient id="gScans" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#4299e1" stopOpacity={0.35}/><stop offset="95%" stopColor="#4299e1" stopOpacity={0}/></linearGradient>
+                <linearGradient id="gIssues" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#fc8181" stopOpacity={0.3}/><stop offset="95%" stopColor="#fc8181" stopOpacity={0}/></linearGradient>
+                <linearGradient id="gResolved" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#00ff94" stopOpacity={0.25}/><stop offset="95%" stopColor="#00ff94" stopOpacity={0}/></linearGradient>
               </defs>
               <XAxis dataKey="m" tick={{fill:"#4a5568",fontSize:11}} axisLine={false} tickLine={false}/>
               <YAxis tick={{fill:"#4a5568",fontSize:11}} axisLine={false} tickLine={false}/>
@@ -627,22 +575,19 @@ function DashboardView({user}){
           </ResponsiveContainer>
         </div>
 
-        {/* Right col: Satisfaction + Score */}
         <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          {/* Security Score radial */}
           <div className="glass" style={{padding:"22px",textAlign:"center"}}>
             <div style={{fontSize:13,fontWeight:700,marginBottom:4}}>Security Score</div>
-            <div style={{fontSize:11,color:"var(--t3)",marginBottom:16}}>Based on last 30 days</div>
+            <div style={{fontSize:11,color:"var(--t3)",marginBottom:16}}>Based on last scans</div>
             <ResponsiveContainer width="100%" height={120}>
-              <RadialBarChart cx="50%" cy="100%" innerRadius="80%" outerRadius="100%" startAngle={180} endAngle={0} data={SCORE_RADIAL}>
+              <RadialBarChart cx="50%" cy="100%" innerRadius="80%" outerRadius="100%" startAngle={180} endAngle={0} data={[{name:"Score",value:avgScore,fill:"#00ff94"}]}>
                 <RadialBar dataKey="value" cornerRadius={6} fill="#00ff94" background={{fill:"rgba(255,255,255,0.03)"}}/>
               </RadialBarChart>
             </ResponsiveContainer>
-            <div style={{marginTop:-20,fontSize:36,fontWeight:800,color:"var(--green2)",fontFamily:"var(--mono)",textShadow:"0 0 20px rgba(0,255,148,0.4)"}}>94<span style={{fontSize:18}}>%</span></div>
-            <div style={{fontSize:12,color:"var(--t2)",marginTop:4}}>Excellent Protection</div>
+            <div style={{marginTop:-20,fontSize:36,fontWeight:800,color:"var(--green2)",fontFamily:"var(--mono)",textShadow:"0 0 20px rgba(0,255,148,0.4)"}}>{avgScore}<span style={{fontSize:18}}>%</span></div>
+            <div style={{fontSize:12,color:"var(--t2)",marginTop:4}}>{avgScore > 80 ? "Excellent Protection" : avgScore > 60 ? "Moderate Protection" : "Action Required"}</div>
           </div>
 
-          {/* Weekly bar */}
           <div className="glass" style={{padding:"20px"}}>
             <div style={{fontWeight:700,fontSize:13,marginBottom:14}}>Weekly Scans</div>
             <ResponsiveContainer width="100%" height={90}>
@@ -658,36 +603,40 @@ function DashboardView({user}){
         </div>
       </div>
 
-      {/* Row 3: Scan Feed + Pie + Pipelines */}
       <div className="stagger-4" style={{display:"grid",gridTemplateColumns:"1.8fr 1fr",gap:14}}>
-        {/* Recent Scans */}
+        {/* Live Scan Feed */}
         <div className="glass">
           <div style={{padding:"18px 22px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid var(--b1)"}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <LiveDot color="var(--cyan)" size={5}/>
               <span style={{fontWeight:700,fontSize:13,letterSpacing:"0.03em"}}>Live Scan Feed</span>
             </div>
-            <span style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)"}}>{RECENT_SCANS.length} RESULTS</span>
+            <span style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)"}}>{scans.length} RESULTS</span>
           </div>
-          {RECENT_SCANS.map((s,i)=>(
-            <div key={i} style={{display:"grid",gridTemplateColumns:"1fr auto 56px 56px",alignItems:"center",gap:12,padding:"11px 22px",borderBottom:i<RECENT_SCANS.length-1?"1px solid var(--b1)":"none",cursor:"pointer",transition:"background .15s"}}
-              onMouseEnter={e=>e.currentTarget.style.background="rgba(66,153,225,0.04)"}
-              onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-              <div>
-                <div style={{fontWeight:600,fontSize:13,marginBottom:2}}>{s.name}</div>
-                <code style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)"}}>{s.method}</code>
-              </div>
-              <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                <Chip status={s.sev}/>
-                <span style={{fontSize:9,color:"var(--t3)",fontFamily:"var(--mono)",background:"var(--navy3)",padding:"2px 6px",borderRadius:3}}>{s.src}</span>
-              </div>
-              <ScoreArc score={s.score} color={SEV[s.sev]?.color||"var(--blue)"} size={48}/>
-              <span style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)",textAlign:"right"}}>{s.time}</span>
-            </div>
-          ))}
+          <div style={{maxHeight: "360px", overflowY: "auto"}}>
+            {scans.length === 0 ? (
+              <div style={{padding: "40px", textAlign: "center", color: "var(--t3)"}}>No scans recorded yet. Run a free scan or link integrations!</div>
+            ) : (
+              scans.map((s,i)=>(
+                <div key={s.id || i} style={{display:"grid",gridTemplateColumns:"1fr auto 56px 56px",alignItems:"center",gap:12,padding:"11px 22px",borderBottom:i<scans.length-1?"1px solid var(--b1)":"none",cursor:"pointer",transition:"background .15s"}}
+                  onMouseEnter={e=>e.currentTarget.style.background="rgba(66,153,225,0.04)"}
+                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <div>
+                    <div style={{fontWeight:600,fontSize:13,marginBottom:2}}>{s.name}</div>
+                    <code style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)"}}>{s.method}</code>
+                  </div>
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <Chip status={s.sev}/>
+                    <span style={{fontSize:9,color:"var(--t3)",fontFamily:"var(--mono)",background:"var(--navy3)",padding:"2px 6px",borderRadius:3}}>{s.src}</span>
+                  </div>
+                  <ScoreArc score={s.score} color={SEV[s.sev]?.color||"var(--blue)"} size={48}/>
+                  <span style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)",textAlign:"right"}}>{s.time}</span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
-        {/* Threat pie */}
         <div className="glass" style={{padding:"22px"}}>
           <div style={{fontWeight:700,fontSize:13,marginBottom:4}}>Threat Distribution</div>
           <div style={{fontSize:11,color:"var(--t3)",marginBottom:12}}>By OWASP category</div>
@@ -699,70 +648,15 @@ function DashboardView({user}){
               <Tooltip content={<CustomTooltip/>}/>
             </PieChart>
           </ResponsiveContainer>
-          <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:8}}>
-            {THREAT_PIE.map((t,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <div style={{width:8,height:8,borderRadius:2,background:t.color,flexShrink:0}}/>
-                  <span style={{fontSize:11,color:"var(--t2)"}}>{t.name}</span>
-                </div>
-                <span style={{fontSize:11,fontWeight:700,fontFamily:"var(--mono)",color:t.color}}>{t.value}</span>
+          {THREAT_PIE.slice(0,4).map((t,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{width:8,height:8,borderRadius:2,background:t.color,flexShrink:0}}/>
+                <span style={{fontSize:11,color:"var(--t2)"}}>{t.name}</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Row 4: Pipelines + Active users */}
-      <div className="stagger-5" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-        {/* Pipeline */}
-        <div className="glass">
-          <div style={{padding:"18px 22px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid var(--b1)"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <LiveDot color="var(--amber)" size={5}/>
-              <span style={{fontWeight:700,fontSize:13}}>Pipeline Monitor</span>
+              <span style={{fontSize:11,fontWeight:700,fontFamily:"var(--mono)",color:t.color}}>{t.value}</span>
             </div>
-            <Chip status="running" small/>
-          </div>
-          {PIPELINES.map((p,i)=>{
-            const s=SEV[p.status];
-            return(
-              <div key={i} style={{display:"grid",gridTemplateColumns:"1fr auto auto auto",alignItems:"center",gap:12,padding:"12px 22px",borderBottom:i<PIPELINES.length-1?"1px solid var(--b1)":"none"}}>
-                <div>
-                  <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:2}}>
-                    {p.status==="running"?<LiveDot color="var(--cyan)" size={5}/>:<span style={{width:7,height:7,borderRadius:"50%",background:s.color,display:"block",boxShadow:`0 0 5px ${s.color}`}}/>}
-                    <code style={{fontSize:12,fontWeight:700,fontFamily:"var(--mono)"}}>{p.name}</code>
-                  </div>
-                  <div style={{fontSize:11,color:"var(--t3)"}}>{p.commit}</div>
-                </div>
-                <code style={{fontSize:9,color:"var(--t3)",fontFamily:"var(--mono)"}}>⎇ {p.branch}</code>
-                <code style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)"}}>{p.time}</code>
-                <Chip status={p.status} small/>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Active users / integration health */}
-        <div className="glass" style={{padding:"22px"}}>
-          <div style={{fontWeight:700,fontSize:13,marginBottom:4}}>Integration Health</div>
-          <div style={{fontSize:11,color:"var(--t3)",marginBottom:18}}>+23 events last week</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:18}}>
-            {[{l:"API Calls",v:"32,984",c:"var(--blue)"},{l:"Scans Run",v:"2.42k",c:"var(--cyan)"},{l:"Issues Found",v:"2,400",c:"var(--red)"},{l:"Resolved",v:"2,380",c:"var(--green2)"}].map(x=>(
-              <div key={x.l} style={{background:"var(--navy3)",borderRadius:10,padding:"14px 16px",border:"1px solid var(--b1)"}}>
-                <div style={{fontSize:10,color:"var(--t3)",marginBottom:4,letterSpacing:"0.04em"}}>{x.l}</div>
-                <div style={{fontSize:20,fontWeight:800,color:x.c,fontFamily:"var(--mono)"}}>{x.v}</div>
-              </div>
-            ))}
-          </div>
-          <ResponsiveContainer width="100%" height={80}>
-            <LineChart data={SCAN_TREND.slice(-7)} margin={{top:0,right:0,left:-30,bottom:0}}>
-              <XAxis dataKey="m" hide/>
-              <Tooltip content={<CustomTooltip/>}/>
-              <Line type="monotone" dataKey="scans" name="Scans" stroke="var(--blue)" strokeWidth={2} dot={false}/>
-              <Line type="monotone" dataKey="resolved" name="Resolved" stroke="var(--green2)" strokeWidth={2} dot={false}/>
-            </LineChart>
-          </ResponsiveContainer>
+          ))}
         </div>
       </div>
     </div>
@@ -771,45 +665,51 @@ function DashboardView({user}){
 
 /* ═══════════════════════════════════════════════════════════
    ENDPOINTS VIEW
-═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function EndpointsView(){
-  const [filter,setFilter]=useState("all");
-  const filtered=filter==="all"?ENDPOINTS_DATA:ENDPOINTS_DATA.filter(e=>e.status===filter);
+  const endpoints = useAppStore(s => s.endpoints);
+  const specs = useAppStore(s => s.specs);
+  const fetchEndpoints = useAppStore(s => s.fetchEndpoints);
+  const [filter, setFilter] = useState("");
+
+  useEffect(() => {
+    if(specs.length > 0) {
+      fetchEndpoints(specs[0].id);
+    }
+  }, [specs]);
+
+  const filtered = endpoints.filter(e => e.path.toLowerCase().includes(filter.toLowerCase()));
+
   return(
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
-      <div style={{display:"flex",gap:10,alignItems:"center"}}>
-        {["all","safe","medium","high","critical"].map(f=>(
-          <button key={f} onClick={()=>setFilter(f)}
-            style={{padding:"7px 16px",borderRadius:8,border:"1px solid",fontSize:11,fontWeight:700,cursor:"pointer",letterSpacing:"0.06em",fontFamily:"var(--mono)",
-              borderColor:filter===f?(SEV[f]||{border:"var(--b3)"}).border||"var(--b3)":"var(--b1)",
-              background:filter===f?(SEV[f]||{bg:"var(--navy3)"}).bg||"var(--navy3)":"var(--navy3)",
-              color:filter===f?(SEV[f]||{color:"var(--t1)"}).color||"var(--t1)":"var(--t2)"}}>
-            {f.toUpperCase()}
-          </button>
-        ))}
-        <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8,background:"var(--navy3)",border:"1px solid var(--b1)",borderRadius:8,padding:"7px 14px"}}>
-          <i className="ti ti-search" style={{fontSize:13,color:"var(--t3)"}}/>
-          <span style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)"}}>Filter endpoints…</span>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{position:"relative",width:320}}>
+          <i className="ti ti-search" style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:14,color:"var(--t3)"}}/>
+          <input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Filter by endpoint path..."
+            style={{width:"100%",paddingLeft:36,paddingRight:12,paddingTop:9,paddingBottom:9,background:"var(--navy3)",border:"1px solid var(--b2)",borderRadius:8,color:"var(--t1)",fontSize:13}}/>
         </div>
+        <span style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)"}}>{filtered.length} ENDPOINTS LOADED</span>
       </div>
       <div className="glass">
         <div style={{display:"grid",gridTemplateColumns:"64px 1fr 1fr 80px 80px 56px",gap:12,padding:"12px 22px",borderBottom:"1px solid var(--b1)"}}>
-          {["METHOD","PATH","STATUS","LATENCY","CALLS",""].map(h=>(
-            <span key={h} style={{fontSize:9,fontWeight:700,color:"var(--t3)",letterSpacing:"0.12em",fontFamily:"var(--mono)"}}>{h}</span>
-          ))}
+          {["METHOD","PATH","SECURITY","LATENCY","CALLS",""].map(h=><span key={h} style={{fontSize:9,fontWeight:700,color:"var(--t3)",letterSpacing:"0.12em",fontFamily:"var(--mono)"}}>{h}</span>)}
         </div>
-        {filtered.map((e,i)=>(
-          <div key={i} style={{display:"grid",gridTemplateColumns:"64px 1fr 1fr 80px 80px 56px",alignItems:"center",gap:12,padding:"14px 22px",borderBottom:i<filtered.length-1?"1px solid var(--b1)":"none",cursor:"pointer",transition:"background .15s"}}
-            onMouseEnter={e2=>e2.currentTarget.style.background="rgba(66,153,225,0.03)"}
-            onMouseLeave={e2=>e2.currentTarget.style.background="transparent"}>
-            <span style={{fontSize:10,fontWeight:800,fontFamily:"var(--mono)",color:METHOD_CLR[e.method]||"var(--cyan)"}}>{e.method}</span>
-            <code style={{fontSize:12,color:"var(--t1)",fontFamily:"var(--mono)"}}>{e.path}</code>
-            <Chip status={e.status}/>
-            <span style={{fontSize:12,fontFamily:"var(--mono)",color:"var(--t2)"}}>{e.latency}</span>
-            <span style={{fontSize:12,fontFamily:"var(--mono)",color:"var(--t2)"}}>{e.calls}</span>
-            <i className="ti ti-chevron-right" style={{fontSize:14,color:"var(--t3)"}}/>
-          </div>
-        ))}
+        {filtered.length === 0 ? (
+          <div style={{padding: "40px", textAlign: "center", color: "var(--t3)"}}>No parsed endpoints found. Import an OpenAPI spec file to populate!</div>
+        ) : (
+          filtered.map((e,i)=>(
+            <div key={e.id || i} style={{display:"grid",gridTemplateColumns:"64px 1fr 1fr 80px 80px 56px",alignItems:"center",gap:12,padding:"14px 22px",borderBottom:i<filtered.length-1?"1px solid var(--b1)":"none",cursor:"pointer",transition:"background .15s"}}
+              onMouseEnter={e2=>e2.currentTarget.style.background="rgba(66,153,225,0.03)"}
+              onMouseLeave={e2=>e2.currentTarget.style.background="transparent"}>
+              <span style={{fontSize:10,fontWeight:800,fontFamily:"var(--mono)",color:METHOD_CLR[e.method]||"var(--cyan)"}}>{e.method}</span>
+              <code style={{fontSize:12,color:"var(--t1)",fontFamily:"var(--mono)"}}>{e.path}</code>
+              <Chip status={e.status}/>
+              <span style={{fontSize:12,fontFamily:"var(--mono)",color:"var(--t2)"}}>{e.latency}</span>
+              <span style={{fontSize:12,fontFamily:"var(--mono)",color:"var(--t2)"}}>{e.calls}</span>
+              <i className="ti ti-chevron-right" style={{fontSize:14,color:"var(--t3)"}}/>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -817,38 +717,44 @@ function EndpointsView(){
 
 /* ═══════════════════════════════════════════════════════════
    ALERTS VIEW
-═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function AlertsView(){
-  const [alerts,setAlerts]=useState(ALERTS);
-  const markRead=id=>setAlerts(a=>a.map(x=>x.id===id?{...x,read:true}:x));
+  const alerts = useAppStore(s => s.alerts);
+  const markAlertRead = useAppStore(s => s.markAlertRead);
+  const markAllAlertsRead = useAppStore(s => s.markAllAlertsRead);
+
   return(
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{fontSize:13,color:"var(--t2)"}}>{alerts.filter(a=>!a.read).length} unread alerts</div>
-        <button onClick={()=>setAlerts(a=>a.map(x=>({...x,read:true})))} style={{padding:"7px 16px",background:"var(--navy3)",border:"1px solid var(--b2)",borderRadius:8,color:"var(--t2)",fontSize:12,fontWeight:600,cursor:"pointer"}}>Mark all read</button>
+        <button onClick={markAllAlertsRead} style={{padding:"7px 16px",background:"var(--navy3)",border:"1px solid var(--b2)",borderRadius:8,color:"var(--t2)",fontSize:12,fontWeight:600,cursor:"pointer"}}>Mark all read</button>
       </div>
       <div className="glass">
-        {alerts.map((a,i)=>{
-          const s=SEV[a.type]||SEV.info;
-          return(
-            <div key={a.id} style={{display:"flex",alignItems:"center",gap:16,padding:"16px 22px",borderBottom:i<alerts.length-1?"1px solid var(--b1)":"none",background:a.read?"transparent":"rgba(66,153,225,0.02)",cursor:"pointer",transition:"background .15s"}}
-              onMouseEnter={e=>e.currentTarget.style.background="rgba(66,153,225,0.04)"}
-              onMouseLeave={e=>e.currentTarget.style.background=a.read?"transparent":"rgba(66,153,225,0.02)"}
-              onClick={()=>markRead(a.id)}>
-              <div style={{width:36,height:36,borderRadius:9,background:s.bg,border:`1px solid ${s.border}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <i className={`ti ${a.type==="critical"?"ti-alert-triangle":a.type==="high"?"ti-alert-circle":a.type==="medium"?"ti-info-circle":"ti-circle-check"}`} style={{fontSize:16,color:s.color}}/>
+        {alerts.length === 0 ? (
+          <div style={{padding: "40px", textAlign: "center", color: "var(--t3)"}}>No alerts triggered. System health nominal.</div>
+        ) : (
+          alerts.map((a,i)=>{
+            const s=SEV[a.type]||SEV.info;
+            return(
+              <div key={a.id || i} style={{display:"flex",alignItems:"center",gap:16,padding:"16px 22px",borderBottom:i<alerts.length-1?"1px solid var(--b1)":"none",background:a.read?"transparent":"rgba(66,153,225,0.02)",cursor:"pointer",transition:"background .15s"}}
+                onMouseEnter={e=>e.currentTarget.style.background="rgba(66,153,225,0.04)"}
+                onMouseLeave={e=>e.currentTarget.style.background=a.read?"transparent":"rgba(66,153,225,0.02)"}
+                onClick={()=>markAlertRead(a.id)}>
+                <div style={{width:36,height:36,borderRadius:9,background:s.bg,border:`1px solid ${s.border}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <i className={`ti ${a.type==="critical"?"ti-alert-triangle":a.type==="high"?"ti-alert-circle":a.type==="medium"?"ti-info-circle":"ti-circle-check"}`} style={{fontSize:16,color:s.color}}/>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:a.read?500:700,fontSize:13,color:a.read?"var(--t2)":"var(--t1)",marginBottom:2}}>{a.msg}</div>
+                  <div style={{fontSize:11,color:"var(--t3)",fontFamily:"var(--mono)"}}>{a.time}</div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <Chip status={a.type} small/>
+                  {!a.read&&<div style={{width:8,height:8,borderRadius:"50%",background:"var(--blue)",flexShrink:0}}/>}
+                </div>
               </div>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:a.read?500:700,fontSize:13,color:a.read?"var(--t2)":"var(--t1)",marginBottom:2}}>{a.msg}</div>
-                <div style={{fontSize:11,color:"var(--t3)",fontFamily:"var(--mono)"}}>{a.time}</div>
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <Chip status={a.type} small/>
-                {!a.read&&<div style={{width:8,height:8,borderRadius:"50%",background:"var(--blue)",flexShrink:0}}/>}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );
@@ -856,31 +762,26 @@ function AlertsView(){
 
 /* ═══════════════════════════════════════════════════════════
    FREE SCAN VIEW
-═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function ScanView(){
-  const [url,setUrl]=useState("");
-  const [phase,setPhase]=useState("idle");
-  const [prog,setProg]=useState(0);
-  const [cur,setCur]=useState(0);
+  const [url, setUrl] = useState("");
+  const triggerScan = useAppStore(s => s.triggerScan);
+  const scans = useAppStore(s => s.scans);
+  const streamProgress = useAppStore(s => s.streamProgress);
+  const streamCheck = useAppStore(s => s.streamCheck);
+  const streamStatus = useAppStore(s => s.streamStatus);
+
   const CHECKS=["Broken Object Level Auth","Broken User Auth","Excessive Data Exposure","Lack of Rate Limiting","Broken Function Level Auth","Mass Assignment","Security Misconfiguration","Injection Flaws","Improper Asset Management","Insufficient Logging"];
-  const doScan=()=>{
-    if(!url.trim())return;
-    setPhase("scanning");setProg(0);setCur(0);
-    let p=0,c=0;
-    const iv=setInterval(()=>{
-      p+=Math.random()*11;c=Math.floor((p/100)*CHECKS.length);
-      setProg(Math.min(p,100));setCur(Math.min(c,CHECKS.length-1));
-      if(p>=100){clearInterval(iv);setPhase("done");}
-    },280);
+  
+  const doScan = () => {
+    if (!url.trim()) return;
+    triggerScan(`Manual Scan — ${new URL(url).hostname}`, url, "endpoint");
   };
-  const RESULTS=[
-    {check:"Broken Authentication",sev:"critical",detail:"JWT not validated on 2 endpoints",fix:"Add validateToken() middleware"},
-    {check:"Rate Limiting",sev:"high",detail:"No throttle on /api/login",fix:"Implement token bucket algorithm"},
-    {check:"CORS Policy",sev:"medium",detail:"Wildcard origin (*) allowed",fix:"Restrict to known origins list"},
-    {check:"TLS Configuration",sev:"low",detail:"TLS 1.1 still enabled",fix:"Enforce TLS 1.3 minimum"},
-    {check:"Input Validation",sev:"safe",detail:"All inputs sanitized correctly",fix:null},
-    {check:"Security Headers",sev:"safe",detail:"All headers present and correct",fix:null},
-  ];
+
+  // Find the scan details if scan completed
+  const currentScan = scans[0]; // latest scan
+  const activeFindings = currentScan?.findings || [];
+  
   return(
     <div style={{maxWidth:720,margin:"0 auto"}}>
       <div className="glass" style={{padding:40}}>
@@ -891,64 +792,69 @@ function ScanView(){
           <h2 style={{fontSize:26,fontWeight:800,marginBottom:8,letterSpacing:"-0.5px"}}>Free API Security Scan</h2>
           <p style={{fontSize:14,color:"var(--t2)",lineHeight:1.6}}>Full OWASP API Top 10 analysis — instant results, no account required</p>
         </div>
+        
         <div style={{display:"flex",gap:10,marginBottom:28}}>
           <div style={{flex:1,position:"relative"}}>
             <i className="ti ti-link" style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:15,color:"var(--t3)"}}/>
             <input value={url} onChange={e=>setUrl(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doScan()} placeholder="https://api.example.com/openapi.json"
               style={{width:"100%",paddingLeft:42,paddingRight:14,paddingTop:13,paddingBottom:13,background:"var(--navy3)",border:"1px solid var(--b2)",borderRadius:10,color:"var(--t1)",fontSize:14,fontFamily:"var(--mono)",transition:"border-color .2s"}}/>
           </div>
-          <button onClick={doScan} disabled={phase==="scanning"}
-            style={{padding:"13px 28px",background:phase==="scanning"?"var(--navy4)":"linear-gradient(135deg,var(--blue),var(--indigo))",color:phase==="scanning"?"var(--t3)":"#fff",border:"none",borderRadius:10,fontWeight:800,fontSize:13,cursor:phase==="scanning"?"not-allowed":"pointer",letterSpacing:"0.06em",boxShadow:phase==="scanning"?"none":"0 8px 24px rgba(66,153,225,0.35)",transition:"all .2s"}}>
-            {phase==="scanning"?"SCANNING…":"SCAN NOW"}
+          <button onClick={doScan} disabled={streamStatus === "scanning"}
+            style={{padding:"13px 28px",background:streamStatus === "scanning"?"var(--navy4)":"linear-gradient(135deg,var(--blue),var(--indigo))",color:streamStatus === "scanning"?"var(--t3)":"#fff",border:"none",borderRadius:10,fontWeight:800,fontSize:13,cursor:streamStatus === "scanning"?"not-allowed":"pointer",letterSpacing:"0.06em",boxShadow:streamStatus === "scanning"?"none":"0 8px 24px rgba(66,153,225,0.35)",transition:"all .2s"}}>
+            {streamStatus === "scanning" ? "SCANNING…" : "SCAN NOW"}
           </button>
         </div>
-        {phase==="scanning"&&(
+
+        {streamStatus === "scanning" && (
           <div style={{marginBottom:28}}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-              <span style={{fontSize:12,color:"var(--blue2)",fontFamily:"var(--mono)",fontWeight:600}}>{CHECKS[cur]}</span>
-              <span style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)"}}>{Math.round(prog)}%</span>
+              <span style={{fontSize:12,color:"var(--blue2)",fontFamily:"var(--mono)",fontWeight:600}}>{streamCheck}</span>
+              <span style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)"}}>{streamProgress}%</span>
             </div>
             <div style={{height:4,background:"var(--navy4)",borderRadius:2,marginBottom:20}}>
-              <div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,var(--blue),var(--cyan))",borderRadius:2,boxShadow:"0 0 10px rgba(0,212,255,0.4)",transition:"width .3s ease"}}/>
+              <div style={{height:"100%",width:`${streamProgress}%`,background:"linear-gradient(90deg,var(--blue),var(--cyan))",borderRadius:2,boxShadow:"0 0 10px rgba(0,212,255,0.4)",transition:"width .3s ease"}}/>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              {CHECKS.map((c,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:i<=cur?"var(--t2)":"var(--t3)"}}>
-                  <i className={`ti ${i<cur?"ti-circle-check":i===cur?"ti-loader-2":"ti-circle"}`}
-                    style={{fontSize:14,color:i<cur?"var(--green2)":i===cur?"var(--blue)":"var(--t3)",animation:i===cur?"spin 1s linear infinite":"none"}}/>
-                  {c}
-                </div>
-              ))}
+              {CHECKS.map((c,i)=>{
+                const checkPercentage = (i + 1) * 10;
+                const isCheckDone = streamProgress > checkPercentage;
+                const isCheckActive = Math.abs(streamProgress - checkPercentage) < 10;
+                return (
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:isCheckDone?"var(--t2)":"var(--t3)"}}>
+                    <i className={`ti ${isCheckDone?"ti-circle-check":isCheckActive?"ti-loader-2":"ti-circle"}`}
+                      style={{fontSize:14,color:isCheckDone?"var(--green2)":isCheckActive?"var(--blue)":"var(--t3)",animation:isCheckActive?"spin 1s linear infinite":"none"}}/>
+                    {c}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
-        {phase==="done"&&(
+
+        {streamStatus === "completed" && currentScan && (
           <div style={{animation:"fadeUp .4s ease"}}>
-            <div style={{background:"rgba(0,255,148,0.08)",border:"1px solid rgba(0,255,148,0.2)",borderRadius:12,padding:"16px 20px",marginBottom:24,display:"flex",alignItems:"center",gap:14}}>
-              <i className="ti ti-shield-check" style={{fontSize:30,color:"var(--green2)"}}/>
+            <div style={{background: currentScan.score >= 75 ? "rgba(0,255,148,0.08)" : "rgba(252,129,129,0.08)", border: currentScan.score >= 75 ? "1px solid rgba(0,255,148,0.2)" : "1px solid rgba(252,129,129,0.2)", borderRadius:12,padding:"16px 20px",marginBottom:24,display:"flex",alignItems:"center",gap:14}}>
+              <i className={`ti ${currentScan.score >= 75 ? "ti-shield-check" : "ti-alert-triangle"}`} style={{fontSize:30,color: currentScan.score >= 75 ? "var(--green2)" : "var(--red)"}}/>
               <div>
-                <div style={{fontWeight:800,color:"var(--green2)",fontSize:16}}>Scan Complete — Score: 73 / 100</div>
-                <div style={{fontSize:12,color:"rgba(0,255,148,0.6)",marginTop:2}}>3 critical, 4 high-severity issues found across 10 checks</div>
+                <div style={{fontWeight:800,color: currentScan.score >= 75 ? "var(--green2)" : "var(--red)",fontSize:16}}>Scan Complete — Score: {currentScan.score} / 100</div>
+                <div style={{fontSize:12,color:"var(--t2)",marginTop:2}}>{activeFindings.filter(f=>f.status!=='safe').length} vulnerabilities found across 10 security audits</div>
               </div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-              {RESULTS.map((r,i)=>{
-                const s=SEV[r.sev];
+              {activeFindings.map((r,i)=>{
+                const s=SEV[r.status] || SEV.safe;
                 return(
                   <div key={i} style={{background:s.bg,border:`1px solid ${s.border}`,borderRadius:12,padding:"16px"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                       <span style={{fontWeight:700,fontSize:13}}>{r.check}</span>
-                      <Chip status={r.sev} small/>
+                      <Chip status={r.status} small/>
                     </div>
-                    <div style={{fontSize:12,color:"var(--t3)",marginBottom:r.fix?8:0}}>{r.detail}</div>
+                    <div style={{fontSize:12,color:"var(--t2)",marginBottom:r.fix?8:0}}>{r.detail}</div>
                     {r.fix&&<div style={{fontSize:10,color:s.color,fontFamily:"var(--mono)",background:"rgba(0,0,0,0.2)",padding:"4px 10px",borderRadius:5}}>→ {r.fix}</div>}
                   </div>
                 );
               })}
             </div>
-            <button style={{width:"100%",marginTop:20,padding:14,background:"linear-gradient(135deg,var(--navy3),var(--navy4))",color:"var(--blue2)",border:"1px solid var(--b3)",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",letterSpacing:"0.05em"}}>
-              <i className="ti ti-file-analytics" style={{marginRight:8}}/>EXPORT FULL PDF REPORT
-            </button>
           </div>
         )}
       </div>
@@ -957,44 +863,170 @@ function ScanView(){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   OPENAPI VIEW
-═══════════════════════════════════════════════════════════ */
+   OPENAPI VIEW WITH INTERACTIVE V2 SPEC DIFF
+   ═══════════════════════════════════════════════════════════ */
 function OpenAPIView(){
-  const [loaded,setLoaded]=useState(false);
-  const [drag,setDrag]=useState(false);
+  const specs = useAppStore(s => s.specs);
+  const diff = useAppStore(s => s.diff);
+  const endpoints = useAppStore(s => s.endpoints);
+  const importSpec = useAppStore(s => s.importSpec);
+  const fetchEndpoints = useAppStore(s => s.fetchEndpoints);
+  const scanSpec = useAppStore(s => s.scanSpec);
+  
+  const streamStatus = useAppStore(s => s.streamStatus);
+  const streamProgress = useAppStore(s => s.streamProgress);
+  const streamCheck = useAppStore(s => s.streamCheck);
+
+  const [activeSpec, setActiveSpec] = useState(null);
+  const [drag, setDrag] = useState(false);
+  const [uploadOption, setUploadOption] = useState("file"); // "file" | "yaml"
+
+  useEffect(() => {
+    useAppStore.getState().fetchSpecs();
+  }, []);
+
+  const loadSampleSpec = async (version) => {
+    const filename = version === 1 ? "petstore-v1.yaml" : "petstore-v2.yaml";
+    const content = version === 1 ? PETSTORE_V1 : PETSTORE_V2;
+    const res = await importSpec(filename, content);
+    if (res) {
+      setActiveSpec(res.spec);
+      fetchEndpoints(res.spec.id);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const res = await importSpec(file.name, '', '', file);
+    if (res) {
+      setActiveSpec(res.spec);
+      fetchEndpoints(res.spec.id);
+    }
+  };
+
+  const handleRunScan = async () => {
+    if (!activeSpec) return;
+    scanSpec(activeSpec.id);
+  };
+
   return(
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
-      <div onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)}
-        onDrop={e=>{e.preventDefault();setDrag(false);setLoaded(true);}} onClick={()=>setLoaded(true)}
-        style={{border:`2px dashed ${drag?"var(--blue)":"var(--b2)"}`,borderRadius:14,padding:"52px 36px",textAlign:"center",cursor:"pointer",background:drag?"rgba(66,153,225,0.06)":"var(--navy2)",transition:"all .2s"}}>
-        <i className="ti ti-cloud-upload" style={{fontSize:48,color:drag?"var(--blue)":"var(--t3)",display:"block",marginBottom:14}}/>
-        <div style={{fontWeight:700,fontSize:16,marginBottom:6}}>Drop OpenAPI Spec here</div>
-        <div style={{fontSize:13,color:"var(--t3)"}}>JSON · YAML · Swagger 2.0 · OAS 3.x · Postman Collection</div>
-        <div style={{marginTop:18,display:"inline-block",padding:"9px 22px",border:"1px solid var(--b2)",borderRadius:9,fontSize:13,color:"var(--t2)",background:"var(--navy3)"}}>Browse files</div>
+      <div style={{display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14}}>
+        <div onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)}
+          onDrop={async e=>{e.preventDefault();setDrag(false); const file = e.dataTransfer.files[0]; if(file){const res=await importSpec(file.name, '', '', file); if(res){setActiveSpec(res.spec); fetchEndpoints(res.spec.id);}}}}
+          style={{border:`2px dashed ${drag?"var(--blue)":"var(--b2)"}`,borderRadius:14,padding:"36px 20px",textAlign:"center",cursor:"pointer",background:drag?"rgba(66,153,225,0.06)":"var(--navy2)",transition:"all .2s"}}>
+          <i className="ti ti-cloud-upload" style={{fontSize:38,color:drag?"var(--blue)":"var(--t3)",display:"block",marginBottom:10}}/>
+          <div style={{fontWeight:700,fontSize:15,marginBottom:4}}>Drag & Drop OpenAPI Spec File</div>
+          <div style={{fontSize:12,color:"var(--t3)",marginBottom:14}}>Supports JSON or YAML formatting</div>
+          
+          <div style={{display: "flex", gap: 10, justifyContent: "center"}}>
+            <input type="file" onChange={handleFileUpload} style={{display: "none"}} id="openapi-file-picker"/>
+            <label htmlFor="openapi-file-picker" style={{padding:"8px 18px",border:"1px solid var(--b2)",borderRadius:8,fontSize:12,color:"var(--t2)",background:"var(--navy3)",cursor:"pointer",fontWeight:600}}>Browse Local File</label>
+          </div>
+        </div>
+
+        {/* Demo trigger module */}
+        <div className="glass" style={{padding: 20, display: "flex", flexDirection: "column", justifyContent: "center", gap: 12}}>
+          <div style={{fontWeight: 700, fontSize: 13, color: "var(--blue2)"}}>Demonstration Spec Diff v1 vs v2</div>
+          <p style={{fontSize: 11, color: "var(--t2)"}}>Upload/Select Acme Petstore v1 first. Then import Petstore v2 to automatically perform full OpenAPI endpoint diff calculations!</p>
+          <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8}}>
+            <button onClick={() => loadSampleSpec(1)} style={{padding: "8px", background: "var(--navy3)", border: "1px solid var(--b2)", borderRadius: 8, color: "var(--t1)", fontSize: 11, cursor: "pointer", fontWeight: 700}}>Load Spec v1</button>
+            <button onClick={() => loadSampleSpec(2)} style={{padding: "8px", background: "var(--navy3)", border: "1px solid var(--b2)", borderRadius: 8, color: "var(--t1)", fontSize: 11, cursor: "pointer", fontWeight: 700}}>Load Spec v2</button>
+          </div>
+        </div>
       </div>
-      {loaded&&(
+
+      {streamStatus === "scanning" && (
+        <div className="glass" style={{padding: 20}}>
+          <div style={{fontWeight: 700, fontSize: 12, marginBottom: 8}}>Scanning OpenAPI Endpoints...</div>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:11}}>
+            <span style={{fontFamily:"var(--mono)"}}>{streamCheck}</span>
+            <span style={{fontFamily:"var(--mono)"}}>{streamProgress}%</span>
+          </div>
+          <div style={{height:4,background:"var(--navy4)",borderRadius:2}}>
+            <div style={{height:"100%",width:`${streamProgress}%`,background:"linear-gradient(90deg,var(--blue),var(--cyan))",borderRadius:2}}/>
+          </div>
+        </div>
+      )}
+
+      {/* Render Diff Visualizer */}
+      {diff && (
+        <div className="glass" style={{padding: 20, borderColor: "var(--blue)", borderStyle: "solid", animation: "fadeUp .3s ease"}}>
+          <div style={{display: "flex", alignItems: "center", gap: 8, marginBottom: 14}}>
+            <i className="ti ti-diff" style={{color: "var(--blue)", fontSize: 18}}/>
+            <div style={{fontWeight: 700, fontSize: 14}}>OpenAPI Parser v2 Diff Report</div>
+          </div>
+          <div style={{display: "flex", gap: 14, marginBottom: 16}}>
+            <div style={{padding: "6px 12px", background: "rgba(104,211,145,0.1)", border: "1px solid rgba(104,211,145,0.2)", borderRadius: 6, fontSize: 11, fontFamily:"var(--mono)", color:"var(--green)"}}>
+              <b>+ {diff.added.length}</b> Added
+            </div>
+            <div style={{padding: "6px 12px", background: "rgba(246,173,85,0.1)", border: "1px solid rgba(246,173,85,0.2)", borderRadius: 6, fontSize: 11, fontFamily:"var(--mono)", color:"var(--amber)"}}>
+              <b>~ {diff.modified.length}</b> Modified
+            </div>
+            <div style={{padding: "6px 12px", background: "rgba(252,129,129,0.1)", border: "1px solid rgba(252,129,129,0.2)", borderRadius: 6, fontSize: 11, fontFamily:"var(--mono)", color:"var(--red)"}}>
+              <b>- {diff.deleted.length}</b> Deleted
+            </div>
+          </div>
+
+          <div style={{display: "flex", flexDirection: "column", gap: 8}}>
+            {diff.added.map((e, idx) => (
+              <div key={idx} style={{display: "flex", alignItems: "center", gap: 10, background: "rgba(104,211,145,0.03)", padding: "10px", borderRadius: 8, border: "1px solid rgba(104,211,145,0.1)"}}>
+                <span style={{fontSize: 8, background: "var(--green)", color: "#000", padding: "2px 5px", borderRadius: 3, fontWeight: 700}}>ADDED</span>
+                <span style={{fontFamily:"var(--mono)", fontSize: 11, fontWeight: 800, color: METHOD_CLR[e.method]}}>{e.method}</span>
+                <code style={{fontFamily:"var(--mono)", fontSize: 11}}>{e.path}</code>
+                <span style={{fontSize: 12, color: "var(--t2)"}}>{e.description}</span>
+              </div>
+            ))}
+
+            {diff.modified.map((e, idx) => (
+              <div key={idx} style={{display: "flex", alignItems: "center", gap: 10, background: "rgba(246,173,85,0.03)", padding: "10px", borderRadius: 8, border: "1px solid rgba(246,173,85,0.1)"}}>
+                <span style={{fontSize: 8, background: "var(--amber)", color: "#000", padding: "2px 5px", borderRadius: 3, fontWeight: 700}}>MODIFIED</span>
+                <span style={{fontFamily:"var(--mono)", fontSize: 11, fontWeight: 800, color: METHOD_CLR[e.method]}}>{e.method}</span>
+                <code style={{fontFamily:"var(--mono)", fontSize: 11}}>{e.path}</code>
+                <span style={{fontSize: 12, color: "var(--t1)"}}>{e.description}</span>
+                <span style={{fontSize: 10, color: "var(--amber)", fontFamily:"var(--mono)", marginLeft: "auto"}}>{e.diffDetails}</span>
+              </div>
+            ))}
+
+            {diff.deleted.map((e, idx) => (
+              <div key={idx} style={{display: "flex", alignItems: "center", gap: 10, background: "rgba(252,129,129,0.03)", padding: "10px", borderRadius: 8, border: "1px solid rgba(252,129,129,0.1)"}}>
+                <span style={{fontSize: 8, background: "var(--red)", color: "#fff", padding: "2px 5px", borderRadius: 3, fontWeight: 700}}>DELETED</span>
+                <span style={{fontFamily:"var(--mono)", fontSize: 11, fontWeight: 800, color: METHOD_CLR[e.method]}}>{e.method}</span>
+                <code style={{fontFamily:"var(--mono)", fontSize: 11}}>{e.path}</code>
+                <span style={{fontSize: 12, color: "var(--t3)", textDecoration: "line-through"}}>{e.description}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeSpec && (
         <div className="glass" style={{animation:"fadeUp .3s ease"}}>
           <div style={{padding:"16px 22px",borderBottom:"1px solid var(--b1)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
-              <span style={{fontWeight:700,fontSize:14}}>petstore.yaml</span>
-              <span style={{fontSize:11,color:"var(--t3)",marginLeft:12,fontFamily:"var(--mono)"}}>{OPENAPI_EPS.length} endpoints · 3 schemas</span>
+              <span style={{fontWeight:700,fontSize:14}}>{activeSpec.filename}</span>
+              <span style={{fontSize:11,color:"var(--t3)",marginLeft:12,fontFamily:"var(--mono)"}}>{endpoints.length} endpoints synced</span>
             </div>
             <div style={{display:"flex",gap:8}}>
-              {["Scan All","Export Report"].map(t=>(
-                <button key={t} style={{padding:"7px 14px",border:"1px solid var(--b2)",borderRadius:7,fontSize:11,cursor:"pointer",background:"var(--navy3)",color:"var(--t2)",fontWeight:600}}>{t}</button>
-              ))}
+              <button onClick={handleRunScan} disabled={streamStatus === "scanning"}
+                style={{padding:"7px 14px",border:"none",borderRadius:7,fontSize:11,cursor:"pointer",background:"linear-gradient(135deg,var(--blue),var(--indigo))",color:"#fff",fontWeight:700}}>
+                Scan Specs All
+              </button>
             </div>
           </div>
+          
           <div style={{display:"grid",gridTemplateColumns:"64px 220px 1fr 90px 40px",gap:12,padding:"10px 22px",borderBottom:"1px solid var(--b1)"}}>
             {["METHOD","PATH","DESCRIPTION","STATUS",""].map(h=><span key={h} style={{fontSize:9,fontWeight:700,color:"var(--t3)",letterSpacing:"0.12em",fontFamily:"var(--mono)"}}>{h}</span>)}
           </div>
-          {OPENAPI_EPS.map((ep,i)=>(
-            <div key={i} style={{display:"grid",gridTemplateColumns:"64px 220px 1fr 90px 40px",alignItems:"center",gap:12,padding:"13px 22px",borderBottom:i<OPENAPI_EPS.length-1?"1px solid var(--b1)":"none",cursor:"pointer",transition:"background .15s"}}
+          
+          {endpoints.map((ep,i)=>(
+            <div key={ep.id || i} style={{display:"grid",gridTemplateColumns:"64px 220px 1fr 90px 40px",alignItems:"center",gap:12,padding:"13px 22px",borderBottom:i<endpoints.length-1?"1px solid var(--b1)":"none",cursor:"pointer",transition:"background .15s"}}
               onMouseEnter={e=>e.currentTarget.style.background="rgba(66,153,225,0.03)"}
               onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
               <span style={{fontSize:10,fontWeight:800,fontFamily:"var(--mono)",color:METHOD_CLR[ep.method]||"var(--cyan)"}}>{ep.method}</span>
               <code style={{fontSize:12,fontFamily:"var(--mono)",color:"var(--t1)"}}>{ep.path}</code>
-              <span style={{fontSize:12,color:"var(--t2)"}}>{ep.desc}</span>
+              <span style={{fontSize:12,color:"var(--t2)"}}>{ep.description}</span>
               <Chip status={ep.status} small/>
               <i className="ti ti-chevron-right" style={{fontSize:14,color:"var(--t3)"}}/>
             </div>
@@ -1006,54 +1038,123 @@ function OpenAPIView(){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   POSTMAN VIEW
-═══════════════════════════════════════════════════════════ */
+   POSTMAN VIEW WITH LIVE DYNAMIC SYNC & SCANNING
+   ═══════════════════════════════════════════════════════════ */
 function PostmanView(){
+  const collections = useAppStore(s => s.postmanCollections);
+  const connected = useAppStore(s => s.postmanConnected);
+  const connectPostman = useAppStore(s => s.connectPostman);
+  const disconnectPostman = useAppStore(s => s.disconnectPostman);
+  const scanCollection = useAppStore(s => s.scanCollection);
+  
+  const streamStatus = useAppStore(s => s.streamStatus);
+  const streamProgress = useAppStore(s => s.streamProgress);
+  const streamCheck = useAppStore(s => s.streamCheck);
+
+  const [apiKey, setApiKey] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    useAppStore.getState().fetchPostman();
+  }, []);
+
+  const handleConnect = async () => {
+    if (!apiKey.trim()) return;
+    setLoading(true);
+    await connectPostman(apiKey);
+    setLoading(false);
+  };
+
   return(
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
-      <div className="glass" style={{padding:"24px"}}>
-        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24}}>
-          <div style={{width:48,height:48,borderRadius:12,background:"rgba(255,106,0,0.12)",border:"1px solid rgba(255,106,0,0.25)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <i className="ti ti-brand-postman" style={{fontSize:26,color:"#ff6a00"}}/>
+      {!connected ? (
+        <div className="glass" style={{padding: 40, textAlign: "center", maxWidth: 540, margin: "0 auto"}}>
+          <div style={{width:58,height:58,borderRadius:14,background:"rgba(255,106,0,0.12)",border:"1px solid rgba(255,106,0,0.25)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}>
+            <i className="ti ti-brand-postman" style={{fontSize:30,color:"#ff6a00"}}/>
           </div>
-          <div>
-            <div style={{fontWeight:800,fontSize:15}}>Postman Integration</div>
-            <div style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)"}}>4 collections synced · auto-scan enabled</div>
-          </div>
-          <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-            <LiveDot color="var(--green2)" size={5}/>
-            <span style={{fontSize:11,color:"var(--green2)",fontFamily:"var(--mono)",fontWeight:600}}>CONNECTED</span>
+          <h3 style={{fontWeight: 800, fontSize: 18, marginBottom: 8}}>Connect Postman Integration</h3>
+          <p style={{fontSize: 13, color: "var(--t2)", marginBottom: 24, lineHeight: 1.6}}>Provide your Postman Cloud API key to sync collections, view request structures, and automate security gates.</p>
+          
+          <div style={{display: "flex", gap: 10}}>
+            <input value={apiKey} onChange={e=>setApiKey(e.target.value)} type="password" placeholder="Enter postman_api_key_••••"
+              style={{flex:1,padding:"10px 14px",background:"var(--navy3)",border:"1px solid var(--b2)",borderRadius:10,color:"var(--t1)",fontSize:13,fontFamily:"var(--mono)"}}/>
+            <button onClick={handleConnect} disabled={loading}
+              style={{padding: "10px 22px", background: "linear-gradient(135deg,var(--blue),var(--indigo))", border: "none", borderRadius: 10, color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer"}}>
+              {loading ? "Connecting..." : "Connect API"}
+            </button>
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          {POSTMAN_COLS.map((c,i)=>{
-            const s=SEV[c.status];
-            return(
-              <div key={i} style={{background:"var(--navy3)",border:`1px solid ${s.border}`,borderRadius:12,padding:"18px 20px",cursor:"pointer",transition:"transform .2s"}}
-                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
-                onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
-                  <span style={{fontWeight:700,fontSize:13}}>{c.name}</span>
-                  <Chip status={c.status} small/>
-                </div>
-                <div style={{display:"flex",gap:16,fontSize:11,fontFamily:"var(--mono)",color:"var(--t3)"}}>
-                  <span>{c.reqs} requests</span>
-                  <span style={{color:c.issues>0?s.color:"var(--green2)"}}>{c.issues} issues</span>
-                  <span style={{marginLeft:"auto"}}>{c.updated}</span>
-                </div>
+      ) : (
+        <div className="glass" style={{padding:"24px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24}}>
+            <div style={{width:48,height:48,borderRadius:12,background:"rgba(255,106,0,0.12)",border:"1px solid rgba(255,106,0,0.25)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <i className="ti ti-brand-postman" style={{fontSize:26,color:"#ff6a00"}}/>
+            </div>
+            <div>
+              <div style={{fontWeight:800,fontSize:15}}>Postman Integration</div>
+              <div style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)"}}>{collections.length} collections synced · auto-scan enabled</div>
+            </div>
+            <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:10}}>
+              <LiveDot color="var(--green2)" size={5}/>
+              <span style={{fontSize:11,color:"var(--green2)",fontFamily:"var(--mono)",fontWeight:600}}>CONNECTED</span>
+              <button onClick={disconnectPostman} style={{background: "none", border: "none", color: "var(--red)", fontSize: 12, cursor: "pointer", fontWeight: 700, marginLeft: 10}}>Disconnect</button>
+            </div>
+          </div>
+
+          {streamStatus === "scanning" && (
+            <div style={{marginBottom: 20, background: "rgba(255,106,0,0.05)", border: "1px solid rgba(255,106,0,0.2)", borderRadius: 10, padding: 14}}>
+              <div style={{display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 11}}>
+                <span style={{fontFamily: "var(--mono)", color: "var(--amber)"}}>{streamCheck}</span>
+                <span style={{fontFamily: "var(--mono)"}}>{streamProgress}%</span>
               </div>
-            );
-          })}
+              <div style={{height: 3, background: "var(--navy4)", borderRadius: 2}}>
+                <div style={{height: "100%", width: `${streamProgress}%`, background: "var(--amber)", borderRadius: 2}}/>
+              </div>
+            </div>
+          )}
+
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            {collections.map((c,i)=>{
+              const s=SEV[c.status] || SEV.safe;
+              return(
+                <div key={c.id || i} style={{background:"var(--navy3)",border:`1px solid ${s.border}`,borderRadius:12,padding:"18px 20px",transition:"transform .2s"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
+                    <span style={{fontWeight:700,fontSize:13}}>{c.name}</span>
+                    <Chip status={c.status} small/>
+                  </div>
+                  <div style={{display:"flex",gap:16,fontSize:11,fontFamily:"var(--mono)",color:"var(--t3)", alignItems: "center"}}>
+                    <span>{c.reqs} requests</span>
+                    <span style={{color:c.issues>0?s.color:"var(--green2)"}}>{c.issues} issues</span>
+                    <span>Synced {c.updated}</span>
+                    <button onClick={() => scanCollection(c.id)} disabled={streamStatus === "scanning"}
+                      style={{marginLeft:"auto", padding: "4px 10px", background: "rgba(255,255,255,0.05)", border: "1px solid var(--b2)", borderRadius: 6, color: "var(--t2)", fontSize: 10, cursor: "pointer", fontWeight: 700}}>
+                      Scan Now
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
    GITHUB VIEW
-═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function GitHubView(){
+  const repos = useAppStore(s => s.githubRepos);
+  const scanRepo = useAppStore(s => s.scanRepo);
+  const streamStatus = useAppStore(s => s.streamStatus);
+  const streamProgress = useAppStore(s => s.streamProgress);
+  const streamCheck = useAppStore(s => s.streamCheck);
+
+  useEffect(() => {
+    useAppStore.getState().fetchGitHub();
+  }, []);
+
   return(
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
       <div className="glass" style={{padding:"24px"}}>
@@ -1063,30 +1164,48 @@ function GitHubView(){
           </div>
           <div>
             <div style={{fontWeight:800,fontSize:15}}>GitHub Integration</div>
-            <div style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)"}}>@acme-org · 6 repos monitored</div>
+            <div style={{fontSize:12,color:"var(--t3)",fontFamily:"var(--mono)"}}>@acme-org · {repos.length} repos monitored</div>
           </div>
-          <div style={{marginLeft:"auto",display:"flex",gap:8}}>
+          <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
             <LiveDot color="var(--green2)" size={5}/>
             <Chip status="safe" small/>
           </div>
         </div>
+
+        {streamStatus === "scanning" && (
+          <div style={{marginBottom: 20, background: "rgba(66,153,225,0.05)", border: "1px solid rgba(66,153,225,0.2)", borderRadius: 10, padding: 14}}>
+            <div style={{display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 11}}>
+              <span style={{fontFamily: "var(--mono)", color: "var(--blue)"}}>{streamCheck}</span>
+              <span style={{fontFamily: "var(--mono)"}}>{streamProgress}%</span>
+            </div>
+            <div style={{height: 3, background: "var(--navy4)", borderRadius: 2}}>
+              <div style={{height: "100%", width: `${streamProgress}%`, background: "var(--blue)", borderRadius: 2}}/>
+            </div>
+          </div>
+        )}
+
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
-          {GITHUB_REPOS.map((r,i)=>{
-            const s=SEV[r.status];
+          {repos.map((r,i)=>{
+            const s=SEV[r.status] || SEV.safe;
+            const parts = r.name.split('/');
+            const owner = parts[0];
+            const name = parts[1];
             return(
-              <div key={i} style={{background:"var(--navy3)",border:`1px solid var(--b1)`,borderRadius:12,padding:"18px",cursor:"pointer",transition:"border-color .2s, transform .2s"}}
-                onMouseEnter={e=>{e.currentTarget.style.borderColor=s.border;e.currentTarget.style.transform="translateY(-2px)";}}
-                onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--b1)";e.currentTarget.style.transform="translateY(0)";}}>
+              <div key={r.name || i} style={{background:"var(--navy3)",border:`1px solid var(--b1)`,borderRadius:12,padding:"18px",transition:"border-color .2s, transform .2s"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                   <code style={{fontSize:11,fontWeight:700,fontFamily:"var(--mono)",color:"var(--t1)"}}>{r.name}</code>
                   <ScoreArc score={r.score} color={s.color} size={44}/>
                 </div>
                 <div style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)",marginBottom:10}}>⎇ {r.branch}</div>
-                <div style={{display:"flex",gap:12,fontSize:11}}>
+                <div style={{display:"flex",gap:12,fontSize:11,alignItems:"center"}}>
                   <span style={{color:"var(--blue)"}}><i className="ti ti-git-pull-request" style={{fontSize:11,marginRight:3}}/>{r.prs} PRs</span>
                   <span style={{color:r.issues>0?s.color:"var(--green2)"}}><i className="ti ti-alert-circle" style={{fontSize:11,marginRight:3}}/>{r.issues} issues</span>
+                  <button onClick={() => scanRepo(owner, name)} disabled={streamStatus === "scanning"}
+                    style={{marginLeft:"auto", padding: "4px 8px", background: "rgba(255,255,255,0.05)", border: "1px solid var(--b2)", borderRadius: 6, color: "var(--t2)", fontSize: 10, cursor: "pointer", fontWeight: 700}}>
+                    Scan
+                  </button>
                 </div>
-                <div style={{marginTop:10,fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)"}}>{r.scan}</div>
+                <div style={{marginTop:10,fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)"}}>Scanned {r.scan}</div>
               </div>
             );
           })}
@@ -1097,109 +1216,333 @@ function GitHubView(){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CI/CD VIEW
-═══════════════════════════════════════════════════════════ */
+   CI/CD INTEGRATION & GATED RELEASES
+   ═══════════════════════════════════════════════════════════ */
 function CICDView(){
+  const pipelines = useAppStore(s => s.pipelineRuns);
+  const cicdToken = useAppStore(s => s.cicdToken);
+  
+  const generateCicdToken = useAppStore(s => s.generateCicdToken);
+  const triggerPipelineScan = useAppStore(s => s.triggerPipelineScan);
+
+  const streamStatus = useAppStore(s => s.streamStatus);
+  const streamProgress = useAppStore(s => s.streamProgress);
+  const streamCheck = useAppStore(s => s.streamCheck);
+
+  useEffect(() => {
+    useAppStore.getState().fetchPipelineRuns();
+    if(!cicdToken) generateCicdToken();
+  }, []);
+
+  const handleManualPipelineTrigger = () => {
+    // Generate simulated build details
+    const repos = ["acme/payment-api", "acme/auth-service", "acme/api-gateway", "acme/user-api"];
+    const branches = ["main", "release/2.4", "develop", "feature/auth-refresh"];
+    const commits = [
+      "feat: add jwt auth gate middleware",
+      "fix: patch CORS wildcard vulnerability",
+      "chore: bump docker base images",
+      "docs: document postman testing suite"
+    ];
+
+    const randomRepo = repos[Math.floor(Math.random() * repos.length)];
+    const randomBranch = branches[Math.floor(Math.random() * branches.length)];
+    const randomCommit = commits[Math.floor(Math.random() * commits.length)];
+    const sha = Math.random().toString(16).substring(2, 10);
+
+    triggerPipelineScan(randomRepo, randomBranch, randomCommit, sha, "CI Dashboard Operator");
+  };
+
   return(
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
-        {CICD_INTEGRATIONS.map((c,i)=>(
-          <div key={i} className="glass card-hover" style={{padding:"20px 22px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <div style={{width:38,height:38,borderRadius:10,background:"var(--navy3)",border:"1px solid var(--b1)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  <i className={`ti ${c.icon}`} style={{fontSize:20,color:c.on?"var(--blue2)":"var(--t3)"}}/>
-                </div>
-                <span style={{fontWeight:700,fontSize:13,color:c.on?"var(--t1)":"var(--t3)"}}>{c.name}</span>
-              </div>
-              {c.on&&<LiveDot color="var(--green2)" size={5}/>}
-            </div>
-            {c.on?(
-              <div>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-                  <span style={{fontSize:11,color:"var(--t3)"}}>Success rate</span>
-                  <span style={{fontSize:11,fontFamily:"var(--mono)",color:"var(--green2)",fontWeight:700}}>{Math.round((c.ok/c.runs)*100)}%</span>
-                </div>
-                <div style={{height:3,background:"var(--navy4)",borderRadius:2,marginBottom:10}}>
-                  <div style={{height:"100%",width:`${(c.ok/c.runs)*100}%`,background:"linear-gradient(90deg,var(--green2)60,var(--green2))",borderRadius:2}}/>
-                </div>
-                <div style={{fontSize:11,color:"var(--t3)",fontFamily:"var(--mono)"}}>{c.runs} runs scanned</div>
-              </div>
-            ):(
-              <button style={{width:"100%",padding:"9px",background:"linear-gradient(135deg,rgba(66,153,225,0.12),transparent)",color:"var(--blue2)",border:"1px solid rgba(66,153,225,0.25)",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",letterSpacing:"0.04em"}}>
-                Connect →
-              </button>
-            )}
+      <div className="glass" style={{padding: 20}}>
+        <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14}}>
+          <div>
+            <div style={{fontWeight: 700, fontSize: 13}}>CI/CD Deployment Integrations</div>
+            <div style={{fontSize: 11, color: "var(--t3)", marginTop: 2}}>Integrate ApiGuard checks into your build tool pipelines</div>
           </div>
-        ))}
-      </div>
-      <div className="glass">
-        <div style={{padding:"16px 22px",borderBottom:"1px solid var(--b1)",fontWeight:700,fontSize:13}}>Recent Pipeline Runs</div>
-        {PIPELINES.map((p,i)=>{
-          const s=SEV[p.status];
-          return(
-            <div key={i} style={{display:"grid",gridTemplateColumns:"1fr auto auto auto",alignItems:"center",gap:16,padding:"13px 22px",borderBottom:i<PIPELINES.length-1?"1px solid var(--b1)":"none"}}>
-              <div>
-                <code style={{fontSize:13,fontWeight:700,fontFamily:"var(--mono)"}}>{p.name}</code>
-                <div style={{fontSize:11,color:"var(--t3)",marginTop:2}}>{p.commit}</div>
-              </div>
-              <code style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)"}}>⎇ {p.branch}</code>
-              <code style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)"}}>{p.time}</code>
-              <Chip status={p.status} small/>
+          <button onClick={handleManualPipelineTrigger} disabled={streamStatus === "scanning"}
+            style={{padding: "8px 18px", background: "linear-gradient(135deg,var(--blue),var(--indigo))", border: "none", borderRadius: 8, color: "#fff", fontSize: 11, cursor: "pointer", fontWeight: 700}}>
+            Trigger Simulated Build Pipeline
+          </button>
+        </div>
+
+        {/* Token manager card */}
+        <div style={{display: "flex", gap: 10, background: "var(--navy3)", border: "1px solid var(--b1)", borderRadius: 10, padding: "12px 14px", alignItems: "center"}}>
+          <i className="ti ti-key" style={{fontSize: 18, color: "var(--blue)"}}/>
+          <div style={{flex: 1}}>
+            <div style={{fontSize: 10, color: "var(--t3)", fontWeight: 700}}>CI/CD LONG-LIVED API TOKEN</div>
+            <code style={{fontSize: 12, fontFamily: "var(--mono)", background: "none", padding: 0}}>{cicdToken || "Loading token..."}</code>
+          </div>
+          <button onClick={() => {if(cicdToken) navigator.clipboard.writeText(cicdToken);}}
+            style={{padding: "6px 12px", background: "rgba(255,255,255,0.05)", border: "1px solid var(--b2)", borderRadius: 6, color: "var(--t2)", fontSize: 10, cursor: "pointer", fontWeight: 700}}>
+            Copy Token
+          </button>
+        </div>
+
+        {streamStatus === "scanning" && (
+          <div style={{marginTop: 14, background: "rgba(102,126,234,0.05)", border: "1px solid rgba(102,126,234,0.2)", borderRadius: 10, padding: 14}}>
+            <div style={{display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 11}}>
+              <span style={{fontFamily: "var(--mono)", color: "var(--indigo)"}}>{streamCheck}</span>
+              <span style={{fontFamily: "var(--mono)"}}>{streamProgress}%</span>
             </div>
-          );
-        })}
+            <div style={{height: 3, background: "var(--navy4)", borderRadius: 2}}>
+              <div style={{height: "100%", width: `${streamProgress}%`, background: "var(--indigo)", borderRadius: 2}}/>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="glass">
+        <div style={{padding:"16px 22px",borderBottom:"1px solid var(--b1)",fontWeight:700,fontSize:13}}>Recent Pipeline Runs & Security Gates</div>
+        {pipelines.length === 0 ? (
+          <div style={{padding: "40px", textAlign: "center", color: "var(--t3)"}}>No pipeline runs logged. Click 'Trigger Simulated Build Pipeline' to test exit code 2 gates!</div>
+        ) : (
+          pipelines.map((p,i)=>{
+            return(
+              <div key={p.id || i} style={{display:"grid",gridTemplateColumns:"1fr auto auto auto",alignItems:"center",gap:16,padding:"13px 22px",borderBottom:i<pipelines.length-1?"1px solid var(--b1)":"none"}}>
+                <div>
+                  <code style={{fontSize:13,fontWeight:700,fontFamily:"var(--mono)", background: "none", padding: 0}}>{p.repo}</code>
+                  <div style={{fontSize:11,color:"var(--t3)",marginTop:2}}>{p.commit_msg} <span style={{color: "var(--blue2)"}}>[SHA: {p.commit_sha?.slice(0,7)}]</span></div>
+                </div>
+                <code style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)"}}>⎇ {p.branch}</code>
+                <code style={{fontSize:10,color:"var(--t3)",fontFamily:"var(--mono)"}}>{p.duration}</code>
+                <Chip status={p.status} small/>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PipelinesView(){ return <CICDView/>; }
+
+/* ═══════════════════════════════════════════════════════════
+   INFRASTRUCTURE / DOCKER & BULLMQ MANAGER [NEW VIEW]
+   ═══════════════════════════════════════════════════════════ */
+function InfraView(){
+  const status = useAppStore(s => s.infraStatus);
+  const tuning = useAppStore(s => s.tuning);
+  const fetchInfra = useAppStore(s => s.fetchInfra);
+  const fetchTuning = useAppStore(s => s.fetchTuning);
+  const saveTuning = useAppStore(s => s.saveTuning);
+
+  const [concurrency, setConcurrency] = useState(tuning.concurrency || 3);
+  const [retries, setRetries] = useState(tuning.max_retries || 3);
+  const [backoff, setBackoff] = useState(tuning.backoff_delay || 5000);
+  
+  const [logs, setLogs] = useState([]);
+  const terminalEndRef = useRef(null);
+
+  useEffect(() => {
+    fetchInfra();
+    fetchTuning();
+    
+    // Default starting logs
+    setLogs([
+      `[${new Date().toLocaleTimeString()}] [System] Initializing ApiGuard local stack infrastructure monitor...`,
+      `[${new Date().toLocaleTimeString()}] [Postgres] Connection pool established. 10 client connections available.`,
+      `[${new Date().toLocaleTimeString()}] [Redis] Connected successfully. Subscriber socket active.`,
+      `[${new Date().toLocaleTimeString()}] [BullMQ] Worker listening on scan-queue queue channels.`,
+      `[${new Date().toLocaleTimeString()}] [System] Health checks return all services: HEALTHY.`
+    ]);
+
+    const statusInterval = setInterval(fetchInfra, 5000);
+    return () => clearInterval(statusInterval);
+  }, []);
+
+  useEffect(() => {
+    setConcurrency(tuning.concurrency || 3);
+    setRetries(tuning.max_retries || 3);
+    setBackoff(tuning.backoff_delay || 5000);
+  }, [tuning]);
+
+  // Simulate scrolling terminal updates
+  useEffect(() => {
+    const handleInfraLogGen = () => {
+      const mockEvents = [
+        `[Redis] Ping checking channels... Received PONG (0.24ms)`,
+        `[Postgres] Committing database health check logs.`,
+        `[BullMQ] Scanned scan-queue queue. 0 waiting jobs. Concurrency active.`,
+        `[worker] Heartbeat check. Active concurrent channel threads: ${tuning.concurrency}`,
+      ];
+      const randomEvent = mockEvents[Math.floor(Math.random() * mockEvents.length)];
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${randomEvent}`].slice(-30));
+    };
+
+    const interval = setInterval(handleInfraLogGen, 6000);
+    return () => clearInterval(interval);
+  }, [tuning]);
+
+  // Auto-scroll terminal
+  useEffect(() => {
+    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [logs]);
+
+  const handleTuningSave = async () => {
+    const success = await saveTuning({
+      concurrency,
+      max_retries: retries,
+      backoff_delay: backoff
+    });
+
+    if (success) {
+      setLogs(prev => [
+        ...prev,
+        `[${new Date().toLocaleTimeString()}] [BullMQ] SAVED TUNING CONFIGURATION.`,
+        `[${new Date().toLocaleTimeString()}] [BullMQ] Worker concurrency scaling parameter: ${concurrency} channels.`,
+        `[${new Date().toLocaleTimeString()}] [Worker] Re-launching worker pool... Spawned ${concurrency} parallel scanner threads.`
+      ]);
+    }
+  };
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:16}}>
+      <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14}}>
+        {/* Docker Container Health Cards */}
+        <div className="glass" style={{padding: 22}}>
+          <div style={{fontWeight:700,fontSize:14,marginBottom:18,display:"flex",alignItems:"center",gap:8}}>
+            <i className="ti ti-brand-docker" style={{color: "var(--blue)", fontSize: 18}}/>
+            Docker Compose Stack Health
+          </div>
+
+          <div style={{display: "flex", flexDirection: "column", gap: 12}}>
+            {status.map((c, i) => (
+              <div key={c.name || i} style={{display: "flex", alignItems: "center", gap: 14, background: "var(--navy3)", border: "1px solid var(--b1)", borderRadius: 10, padding: "12px 14px"}}>
+                <div style={{width: 32, height: 32, borderRadius: 8, background: "rgba(66,153,225,0.06)", display: "flex", alignItems: "center", justifyCenter: "center", flexShrink: 0, justifyContent:"center"}}>
+                  <i className="ti ti-box" style={{fontSize: 16, color: "var(--blue)"}}/>
+                </div>
+                <div style={{flex: 1}}>
+                  <div style={{fontWeight: 700, fontSize: 13}}>{c.name}</div>
+                  <div style={{fontSize: 11, color: "var(--t3)", fontFamily: "var(--mono)", marginTop: 2}}>Uptime: {c.uptime} · CPU: {c.cpu} · RAM: {c.memory}</div>
+                </div>
+                <div style={{display: "flex", alignItems: "center", gap: 6}}>
+                  <LiveDot color="var(--green2)" size={5}/>
+                  <span style={{fontSize: 10, fontWeight: 700, color: "var(--green2)", fontFamily: "var(--mono)"}}>{c.status.toUpperCase()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* BullMQ Worker Concurrency Slider */}
+        <div className="glass" style={{padding: 22}}>
+          <div style={{fontWeight:700,fontSize:14,marginBottom:18,display:"flex",alignItems:"center",gap:8}}>
+            <i className="ti ti-settings" style={{color: "var(--blue)", fontSize: 18}}/>
+            Queue Worker Tuning & Concurrency (BullMQ)
+          </div>
+
+          <div style={{display: "flex", flexDirection: "column", gap: 16}}>
+            {/* Concurrency slider */}
+            <div>
+              <div style={{display: "flex", justifyContent: "space-between", marginBottom: 6}}>
+                <span style={{fontSize: 12, fontWeight: 600, color: "var(--t2)"}}>Worker Concurrency (Threads)</span>
+                <span style={{fontSize: 12, fontWeight: 800, fontFamily: "var(--mono)", color: "var(--cyan)"}}>{concurrency} Active Threads</span>
+              </div>
+              <input type="range" min="1" max="10" value={concurrency} onChange={e=>setConcurrency(parseInt(e.target.value))}
+                style={{width: "100%", accentColor: "var(--cyan)", background: "var(--navy3)"}}/>
+            </div>
+
+            {/* Retries */}
+            <div style={{display: "flex", gap: 14}}>
+              <div style={{flex: 1}}>
+                <label style={{fontSize: 11, fontWeight: 600, color: "var(--t3)", display: "block", marginBottom: 6}}>MAX JOB ATTEMPTS</label>
+                <input type="number" min="1" max="5" value={retries} onChange={e=>setRetries(parseInt(e.target.value))}
+                  style={{width:"100%",padding:"9px 12px",background:"var(--navy3)",border:"1px solid var(--b2)",borderRadius:8,color:"var(--t1)",fontSize:13,fontFamily:"var(--mono)"}}/>
+              </div>
+              <div style={{flex: 1}}>
+                <label style={{fontSize: 11, fontWeight: 600, color: "var(--t3)", display: "block", marginBottom: 6}}>BACKOFF DELAY (MS)</label>
+                <input type="number" step="1000" min="1000" max="15000" value={backoff} onChange={e=>setBackoff(parseInt(e.target.value))}
+                  style={{width:"100%",padding:"9px 12px",background:"var(--navy3)",border:"1px solid var(--b2)",borderRadius:8,color:"var(--t1)",fontSize:13,fontFamily:"var(--mono)"}}/>
+              </div>
+            </div>
+
+            <button onClick={handleTuningSave}
+              style={{width: "100%", padding: "11px", background: "linear-gradient(135deg,var(--blue),var(--indigo))", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer", letterSpacing: "0.04em"}}>
+              APPLY WORKER CONCURRENCY CONFIG
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* scrolling terminal log simulation */}
+      <div className="glass" style={{padding: 16, background: "rgba(10,14,26,0.92)", border: "1px solid var(--b1)", borderRadius: 12}}>
+        <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12}}>
+          <div style={{fontSize: 11, color: "var(--t3)", fontFamily: "var(--mono)", fontWeight: 700}}>LIVE SCAN ENGINE logs</div>
+          <div style={{display: "flex", gap: 6}}>
+            <span style={{width: 8, height: 8, borderRadius: "50%", background: "var(--red)"}}/>
+            <span style={{width: 8, height: 8, borderRadius: "50%", background: "var(--amber)"}}/>
+            <span style={{width: 8, height: 8, borderRadius: "50%", background: "var(--green)"}}/>
+          </div>
+        </div>
+
+        <div style={{height: 180, overflowY: "auto", background: "rgba(0,0,0,0.3)", borderRadius: 8, padding: 12, fontFamily: "var(--mono)", fontSize: 11, color: "var(--green2)", lineHeight: 1.6}}>
+          {logs.map((log, i) => (
+            <div key={i}>{log}</div>
+          ))}
+          <div ref={terminalEndRef}/>
+        </div>
       </div>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   PIPELINES VIEW
-═══════════════════════════════════════════════════════════ */
-function PipelinesView(){ return <CICDView/>; }
-
-/* ═══════════════════════════════════════════════════════════
    REPORTS VIEW
-═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function ReportsView(){
+  const reports = useAppStore(s => s.reports);
+  const deleteReport = useAppStore(s => s.deleteReport);
+
+  useEffect(() => {
+    useAppStore.getState().fetchReports();
+  }, []);
+
   return(
     <div className="glass">
       <div style={{padding:"18px 24px",borderBottom:"1px solid var(--b1)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span style={{fontWeight:700,fontSize:14}}>Generated Reports</span>
-        <button style={{padding:"8px 16px",background:"linear-gradient(135deg,var(--blue),var(--indigo))",color:"#fff",border:"none",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",letterSpacing:"0.04em"}}>
-          <i className="ti ti-plus" style={{marginRight:6}}/>Generate New
-        </button>
       </div>
-      {REPORTS_LIST.map((r,i)=>{
-        const color=r.score>80?"var(--green2)":r.score>60?"var(--amber)":"var(--red)";
-        return(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:18,padding:"18px 24px",borderBottom:i<REPORTS_LIST.length-1?"1px solid var(--b1)":"none",cursor:"pointer",transition:"background .15s"}}
-            onMouseEnter={e=>e.currentTarget.style.background="rgba(66,153,225,0.03)"}
-            onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-            <div style={{width:44,height:52,background:"rgba(252,129,129,0.1)",border:"1px solid rgba(252,129,129,0.2)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <i className="ti ti-file-type-pdf" style={{fontSize:22,color:"var(--red)"}}/>
+      
+      {reports.length === 0 ? (
+        <div style={{padding: "40px", textAlign: "center", color: "var(--t3)"}}>No compliance reports generated yet. Run scans to initiate templates!</div>
+      ) : (
+        reports.map((r,i)=>{
+          const color=r.score>80?"var(--green2)":r.score>60?"var(--amber)":"var(--red)";
+          return(
+            <div key={r.id || i} style={{display:"flex",alignItems:"center",gap:18,padding:"18px 24px",borderBottom:i<reports.length-1?"1px solid var(--b1)":"none",cursor:"pointer",transition:"background .15s"}}
+              onMouseEnter={e=>e.currentTarget.style.background="rgba(66,153,225,0.03)"}
+              onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+              <div style={{width:44,height:52,background:"rgba(252,129,129,0.1)",border:"1px solid rgba(252,129,129,0.2)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <i className="ti ti-file-type-pdf" style={{fontSize:22,color:"var(--red)"}}/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:600,fontSize:13,marginBottom:4}}>{r.name}</div>
+                <div style={{fontSize:11,color:"var(--t3)",fontFamily:"var(--mono)"}}>{r.date} · {r.pages} pages · {r.size}</div>
+              </div>
+              <div style={{textAlign:"right",marginRight:16}}>
+                <div style={{fontSize:22,fontWeight:800,color,fontFamily:"var(--mono)",textShadow:`0 0 10px ${color}50`}}>{r.score}<span style={{fontSize:12}}>/100</span></div>
+              </div>
+              <button style={{padding:"8px 16px",border:"1px solid var(--b2)",borderRadius:8,background:"var(--navy3)",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",gap:6,color:"var(--t2)",fontWeight:600}}
+                onClick={() => alert(`Initiating mock download: ${r.name}.pdf (Signed URL verification active)`)}>
+                <i className="ti ti-download" style={{fontSize:13}}/>Download
+              </button>
+              <button onClick={() => deleteReport(r.id)} style={{background: "none", border: "none", color: "var(--red)", fontSize: 16, cursor: "pointer", marginLeft: 10}} title="Delete report">
+                <i className="ti ti-trash"/>
+              </button>
             </div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:600,fontSize:13,marginBottom:4}}>{r.name}</div>
-              <div style={{fontSize:11,color:"var(--t3)",fontFamily:"var(--mono)"}}>{r.date} · {r.pages} pages · {r.size}</div>
-            </div>
-            <div style={{textAlign:"right",marginRight:16}}>
-              <div style={{fontSize:22,fontWeight:800,color,fontFamily:"var(--mono)",textShadow:`0 0 10px ${color}50`}}>{r.score}<span style={{fontSize:12}}>/100</span></div>
-            </div>
-            <button style={{padding:"8px 16px",border:"1px solid var(--b2)",borderRadius:8,background:"var(--navy3)",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",gap:6,color:"var(--t2)",fontWeight:600}}>
-              <i className="ti ti-download" style={{fontSize:13}}/>Download
-            </button>
-          </div>
-        );
-      })}
+          );
+        })
+      )}
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
    ANALYTICS VIEW
-═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function AnalyticsView(){
   return(
     <div style={{display:"flex",flexDirection:"column",gap:20}}>
@@ -1233,56 +1576,13 @@ function AnalyticsView(){
           </ResponsiveContainer>
         </div>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:16}}>
-        <div className="glass" style={{padding:"22px"}}>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:18}}>API Risk Heatmap — Top Endpoints</div>
-          {ENDPOINTS_DATA.map((e,i)=>{
-            const s=SEV[e.status];
-            const pct=parseFloat(e.calls)*1.5;
-            return(
-              <div key={i} style={{marginBottom:14}}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontSize:9,fontWeight:800,fontFamily:"var(--mono)",color:METHOD_CLR[e.method]}}>{e.method}</span>
-                    <code style={{fontSize:12,fontFamily:"var(--mono)",color:"var(--t1)"}}>{e.path}</code>
-                  </div>
-                  <span style={{fontSize:11,fontFamily:"var(--mono)",color:s.color,fontWeight:700}}>{e.calls} calls</span>
-                </div>
-                <div style={{height:4,background:"var(--navy4)",borderRadius:2}}>
-                  <div style={{height:"100%",width:`${Math.min(100,pct)}%`,background:`linear-gradient(90deg,${s.color}60,${s.color})`,borderRadius:2,boxShadow:`0 0 6px ${s.color}40`}}/>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="glass" style={{padding:"22px"}}>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:18}}>Threat Pie</div>
-          <ResponsiveContainer width="100%" height={180}>
-            <PieChart>
-              <Pie data={THREAT_PIE} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value">
-                {THREAT_PIE.map((e,i)=><Cell key={i} fill={e.color} opacity={0.9}/>)}
-              </Pie>
-              <Tooltip content={<CustomTooltip/>}/>
-            </PieChart>
-          </ResponsiveContainer>
-          {THREAT_PIE.slice(0,4).map((t,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <div style={{width:8,height:8,borderRadius:2,background:t.color,flexShrink:0}}/>
-                <span style={{fontSize:11,color:"var(--t2)"}}>{t.name}</span>
-              </div>
-              <span style={{fontSize:11,fontWeight:700,fontFamily:"var(--mono)",color:t.color}}>{t.value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
    SETTINGS VIEW
-═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function SettingsView(){
   const [notif,setNotif]=useState({email:true,slack:false,pagerduty:false,webhook:true});
   const [thresh,setThresh]=useState("high");
@@ -1321,16 +1621,6 @@ function SettingsView(){
             </div>
           </div>
         )},
-        {title:"API Key",icon:"ti-key",content:(
-          <div style={{display:"flex",gap:10}}>
-            <input readOnly value="ag_sk_••••••••••••••••••••••••••••••••"
-              style={{flex:1,padding:"10px 14px",background:"var(--navy3)",border:"1px solid var(--b2)",borderRadius:9,color:"var(--t2)",fontSize:13,fontFamily:"var(--mono)"}}/>
-            <button style={{padding:"10px 18px",background:"var(--navy3)",border:"1px solid var(--b2)",borderRadius:9,color:"var(--t2)",fontSize:12,fontWeight:600,cursor:"pointer"}}>
-              <i className="ti ti-copy"/>
-            </button>
-            <button style={{padding:"10px 18px",background:"rgba(252,129,129,0.1)",border:"1px solid rgba(252,129,129,0.25)",borderRadius:9,color:"var(--red)",fontSize:12,fontWeight:600,cursor:"pointer"}}>Regenerate</button>
-          </div>
-        )},
       ].map((s,i)=>(
         <div key={i} className="glass" style={{padding:"22px 24px"}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18,paddingBottom:16,borderBottom:"1px solid var(--b1)"}}>
@@ -1346,7 +1636,7 @@ function SettingsView(){
 
 /* ═══════════════════════════════════════════════════════════
    PROFILE VIEW
-═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function ProfileView({user}){
   return(
     <div style={{display:"flex",flexDirection:"column",gap:20,maxWidth:720}}>
@@ -1360,10 +1650,9 @@ function ProfileView({user}){
             <div style={{fontSize:13,color:"var(--t2)",marginTop:2}}>{user.email}</div>
             <div style={{marginTop:8}}><Chip status="safe"/></div>
           </div>
-          <button style={{marginLeft:"auto",padding:"9px 18px",background:"linear-gradient(135deg,var(--blue),var(--indigo))",color:"#fff",border:"none",borderRadius:9,fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:"0.04em"}}>Edit Profile</button>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-          {[{l:"Full Name",v:user.name},{l:"Email",v:user.email},{l:"Role",v:user.role||"Platform Lead"},{l:"Plan",v:"Pro — $49/mo"},{l:"Member Since",v:"Jan 2024"},{l:"APIs Monitored",v:"1,284"}].map(f=>(
+          {[{l:"Full Name",v:user.name},{l:"Email",v:user.email},{l:"Role",v:user.role||"Platform Lead"},{l:"Plan",v:"Pro — $49/mo"}].map(f=>(
             <div key={f.l} style={{background:"var(--navy3)",borderRadius:10,padding:"14px 16px",border:"1px solid var(--b1)"}}>
               <div style={{fontSize:10,color:"var(--t3)",fontWeight:600,letterSpacing:"0.06em",marginBottom:4}}>{f.l}</div>
               <div style={{fontSize:14,fontWeight:600,color:"var(--t1)"}}>{f.v}</div>
@@ -1374,50 +1663,65 @@ function ProfileView({user}){
     </div>
   );
 }
-//docs view
+
 function DocsView() {
   return (
     <div className="glass" style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
       <h2 style={{ fontSize: "28px", marginBottom: "20px" }}>ApiGuard Documentation</h2>
       <div style={{ color: "var(--t2)", lineHeight: "1.8", fontSize: "15px" }}>
         <h3 style={{ color: "var(--blue2)", marginTop: "20px" }}>1. Getting Started</h3>
-        <p>ApiGuard is an API security platform. Integrate it into your CI/CD pipelines to catch vulnerabilities before deployment.</p>
+        <p>ApiGuard is a security auditing application. Hook up your OpenAPI/Swagger files, Postman collections, and GitHub repositories to scan endpoints.</p>
         
-        <h3 style={{ color: "var(--blue2)", marginTop: "20px" }}>2. Security Rules</h3>
-        <ul style={{ paddingLeft: "20px" }}>
-          <li><strong>Auth:</strong> Always validate JWT tokens on the server.</li>
-          <li><strong>Input:</strong> Sanitize all incoming user data to prevent Injection.</li>
-          <li><strong>Rate Limiting:</strong> Enforce 1000 requests per minute per IP.</li>
-        </ul>
-
-        <h3 style={{ color: "var(--blue2)", marginTop: "20px" }}>3. Integration</h3>
-        <p>Add our middleware to your backend: <code>npm install apiguard-sdk</code></p>
+        <h3 style={{ color: "var(--blue2)", marginTop: "20px" }}>2. REST API Gating Integration</h3>
+        <p>Integrate ApiGuard scans inside your CI pipeline. Call the API with token headers:</p>
+        <code style={{display:"block", background: "var(--navy3)", border: "1px solid var(--b1)", marginTop: 10, padding: 12, whiteSpace: "pre-wrap", fontFamily: "var(--mono)"}}>
+{`curl -X POST -H "Authorization: Bearer YOUR_TOKEN" \\
+     -d '{"repo": "org/repo", "branch": "main"}' \\
+     http://localhost/api/cicd/scan`}
+        </code>
       </div>
     </div>
   );
 }
-/* ═══════════════════════════════════════════════════════════
-   APP ROOT
-═══════════════════════════════════════════════════════════ */
+
 const VIEW_MAP = {
   dashboard:DashboardView, scan:ScanView, openapi:OpenAPIView,
   postman:PostmanView, github:GitHubView, cicd:CICDView,
   pipelines:PipelinesView, reports:ReportsView, analytics:AnalyticsView,
   endpoints:EndpointsView, alerts:AlertsView, settings:SettingsView, profile:ProfileView,
-  docs: DocsView,
+  docs: DocsView, infra: InfraView
 };
 
 export default function App(){
-  const [user,setUser]=useState(null);
+  const user = useAppStore(s => s.user);
+  const logout = useAppStore(s => s.logout);
+  const fetchMe = useAppStore(s => s.fetchMe);
+  const fetchScans = useAppStore(s => s.fetchScans);
+  const fetchAlerts = useAppStore(s => s.fetchAlerts);
+
   const [active,setActive]=useState("dashboard");
   const activeNav=NAV_ITEMS.find(n=>n.id===active);
   const View=VIEW_MAP[active]||DashboardView;
+
+  // On mount: fetch user metadata and initialize databases
+  useEffect(() => {
+    fetchMe();
+    fetchScans();
+    fetchAlerts();
+
+    // Auto-polling for real-time alerts
+    const timer = setInterval(() => {
+      fetchAlerts();
+      fetchScans();
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   if(!user) return(
     <>
       <style>{GLOBAL_CSS}</style>
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
-      <LoginPage onLogin={setUser}/>
+      <LoginPage/>
     </>
   );
 
@@ -1427,9 +1731,9 @@ export default function App(){
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
       <div style={{display:"flex",minHeight:"100vh",position:"relative"}}>
         <BgBlobs/>
-        <Sidebar active={active} setActive={setActive} user={user} onLogout={()=>setUser(null)}/>
+        <Sidebar active={active} setActive={setActive} user={user} onLogout={logout}/>
         <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"auto",position:"relative",zIndex:1}}>
-          <Topbar page={activeNav?.label||"Dashboard"} user={user} alerts={ALERTS} setActive={setActive}/>
+          <Topbar page={activeNav?.label||"Dashboard"} user={user} setActive={setActive}/>
           <div style={{flex:1,padding:24,overflowY:"auto"}}>
             <View key={active} user={user}/>
           </div>

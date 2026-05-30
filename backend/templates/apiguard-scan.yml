@@ -1,0 +1,77 @@
+name: ApiGuard Security Scan
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Trigger security scan
+        id: trigger
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ vars.APIGUARD_API_URL }}/api/cicd/scan" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.APIGUARD_TOKEN }}" \
+            -d "{
+              \"repoName\": \"${{ github.repository }}\",
+              \"branch\": \"${{ github.ref_name }}\",
+              \"commitSha\": \"${{ github.sha }}\"
+            }")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "status=$HTTP_CODE" >> "$GITHUB_OUTPUT"
+          echo "body=$BODY" >> "$GITHUB_OUTPUT"
+          SCAN_ID=$(echo "$BODY" | jq -r '.scanId // empty')
+          echo "scan_id=$SCAN_ID" >> "$GITHUB_OUTPUT"
+          if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
+            echo "Failed to trigger scan (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+
+      - name: Wait for scan completion
+        run: sleep 15
+
+      - name: Fetch and display results
+        run: |
+          RESULT=$(curl -s -X GET \
+            "${{ vars.APIGUARD_API_URL }}/api/scans/${{ steps.trigger.outputs.scan_id }}" \
+            -H "Authorization: Bearer ${{ secrets.APIGUARD_TOKEN }}")
+          STATUS=$(echo "$RESULT" | jq -r '.status // "unknown"')
+          SCORE=$(echo "$RESULT" | jq -r '.score // "N/A"')
+          CRITICAL=$(echo "$RESULT" | jq '[.findings[]? | select(.severity == "critical")] | length')
+          HIGH=$(echo "$RESULT" | jq '[.findings[]? | select(.severity == "high")] | length')
+          MEDIUM=$(echo "$RESULT" | jq '[.findings[]? | select(.severity == "medium")] | length')
+          echo "========================================"
+          echo "  ApiGuard Security Scan Results"
+          echo "========================================"
+          echo "  Status:   $STATUS"
+          echo "  Score:    $SCORE / 100"
+          echo "  Critical: $CRITICAL"
+          echo "  High:     $HIGH"
+          echo "  Medium:   $MEDIUM"
+          echo "========================================"
+          if [ "$STATUS" = "failed" ]; then
+            echo "Scan failed"
+            exit 1
+          fi
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "Critical vulnerabilities detected"
+            exit 1
+          fi
+          if [ "$SCORE" != "N/A" ] && [ "$SCORE" -lt 75 ]; then
+            echo "Security score below threshold (75)"
+            exit 1
+          fi
+          echo "Security scan passed"
