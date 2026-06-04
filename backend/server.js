@@ -6,6 +6,7 @@ import multer from 'multer';
 import Redis from 'ioredis';
 import dotenv from 'dotenv';
 import fs from 'fs';
+import { OAuth2Client } from 'google-auth-library';
 import pool, { initDb } from './db.js';
 import { scanQueue, redisConnection } from './queue.js';
 
@@ -26,6 +27,10 @@ const redisSubscriber = new Redis({
 const JWT_SECRET = process.env.JWT_SECRET || 'apiguard_super_secret_jwt_key_2026';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'apiguard_super_secret_jwt_refresh_key_2026';
 const refreshTokens = new Set();
+
+// Google OAuth2 Client
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'your-google-client-id.apps.googleusercontent.com';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 try {
   await initDb();
@@ -71,8 +76,98 @@ const authMiddleware = (req, res, next) => {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   AUTH ENDPOINTS
+   AUTH ENDPOINTS (INCLUDING GOOGLE OAUTH)
    ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * Google OAuth Login Endpoint
+ * Verifies Google ID token and creates/updates user account
+ */
+app.post('/api/auth/google', async (req, res) => {
+  const { token } = req.body;
+  
+  if (!token) {
+    return res.status(400).json({ error: 'Google ID token required' });
+  }
+
+  try {
+    console.log('[Google Auth] Verifying token from client...');
+    
+    // Verify the Google ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture } = payload;
+
+    console.log(`[Google Auth] Token verified for user: ${email}`);
+
+    // Check if user exists in database
+    const existingUser = await pool.query(
+      'SELECT id, name, email FROM users WHERE email = $1',
+      [email]
+    );
+
+    let user;
+    if (existingUser.rows.length > 0) {
+      // User exists, use existing account
+      user = existingUser.rows[0];
+      console.log(`[Google Auth] Existing user found: ${user.id}`);
+      
+      // Update user's picture URL in metadata (optional)
+      // Could store in a users_metadata table if needed
+    } else {
+      // New user, create account
+      console.log(`[Google Auth] Creating new user: ${email}`);
+      
+      // Generate a random password (user won't use it for Google OAuth)
+      const randomPassword = Math.random().toString(36).slice(-32);
+      const passwordHash = await bcrypt.hash(randomPassword, 10);
+
+      const newUserResult = await pool.query(
+        'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email',
+        [name || email.split('@')[0], email, passwordHash]
+      );
+
+      user = newUserResult.rows[0];
+      console.log(`[Google Auth] New user created with ID: ${user.id}`);
+    }
+
+    // Generate JWT tokens
+    const accessToken = jwt.sign(
+      { id: user.id, name: user.name, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: user.id },
+      JWT_REFRESH_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    refreshTokens.add(refreshToken);
+
+    console.log(`[Google Auth] Successfully authenticated user: ${user.email}`);
+
+    res.status(200).json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: 'Platform Lead',
+        picture: picture, // Include Google profile picture
+      },
+      accessToken,
+      refreshToken,
+    });
+  } catch (error) {
+    console.error('[Google Auth] Error:', error.message);
+    res.status(401).json({ error: 'Invalid or expired Google token' });
+  }
+});
 
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, password } = req.body;
@@ -273,7 +368,7 @@ app.get('/api/scans/:id/stream', async (req, res) => {
 });
 
 /* ═══════════════════════════════════════════════════════════════
-   OPENAPI PARSER ENDPOINTS
+   OPENAPI PARSER ENDPOINTS (REMAINING ENDPOINTS...)
    ═══════════════════════════════════════════════════════════════ */
 
 app.post('/api/openapi/import', authMiddleware, upload.single('spec'), async (req, res) => {
@@ -850,4 +945,5 @@ app.post('/api/infra/tuning', authMiddleware, async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`[ApiGuard] Express API Server listening on port ${PORT}`);
+  console.log(`[Google OAuth] GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}`);
 });
