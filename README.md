@@ -22,7 +22,7 @@
 
 ## 📋 Overview
 
-**ApiGuard** is a full-stack SaaS platform for automated API security scanning based on the **OWASP API Security Top 10**. It enables development teams to identify vulnerabilities across their API endpoints, integrate security checks into CI/CD pipelines, and monitor API health through a unified dashboard.
+**ApiGuard** is a full-stack SaaS platform for automated API security scanning based on the **OWASP API Security Top 10**. It enables development teams to identify vulnerabilities across their APIs, manage security posture, and integrate security gates into CI/CD pipelines.
 
 ### Key Capabilities
 
@@ -107,59 +107,247 @@ apiguard/
 | [Node.js](https://nodejs.org/) | 20+ |
 | [Docker](https://www.docker.com/) | 24+ |
 | [Docker Compose](https://docs.docker.com/compose/) | 2.20+ |
+| [Git](https://git-scm.com/) | Latest |
 
-### Option 1: Docker (Recommended)
+---
 
-Spin up the entire stack with one command:
+## 🔑 Authentication Guide
 
-```bash
-docker compose up
-```
+### GitHub Login
 
-This starts all 5 services:
+To clone and access this repository:
 
-| Service | Port | Description |
-|---------|------|-------------|
-| `frontend` | [localhost:5173](http://localhost:5173) | Vite React dev server |
-| `api` | [localhost:5000](http://localhost:5000) | Express API server |
-| `worker` | — | BullMQ scan engine worker |
-| `db` | 5432 | PostgreSQL 15 database |
-| `redis` | 6379 | Redis 7 (queue + pub/sub) |
+1. **Ensure you have Git installed**
+   ```bash
+   git --version
+   ```
 
-### Option 2: Local Development
+2. **Clone the repository**
+   ```bash
+   git clone https://github.com/uppalriya371-blip/TeamBeta.git
+   cd TeamBeta
+   ```
 
-**1. Start infrastructure services:**
+3. **Configure Git with your GitHub credentials**
+   ```bash
+   git config --global user.name "Your Name"
+   git config --global user.email "your.email@example.com"
+   ```
 
-```bash
-docker compose up db redis -d
-```
+### Application Login
 
-**2. Install and start the backend:**
-
-```bash
-cd backend
-npm install
-node server.js &
-node worker.js &
-```
-
-**3. Install and start the frontend:**
-
-```bash
-npm install
-npm run dev
-```
-
-**4. Open the app:**
-
-Navigate to [http://localhost:5173](http://localhost:5173)
-
-### Default Login
+Once the app is running, use the default credentials to log in:
 
 ```
 Email:    admin@apiguard.io
 Password: password123
 ```
+
+**To create a new account:**
+- Click "Sign up" on the login page
+- Enter your name, email, and password
+- Confirm your email (if email verification is enabled)
+- Log in with your credentials
+
+---
+
+## 🎯 Run Locally
+
+### Option 1: Docker (Recommended - Fastest Setup)
+
+This is the easiest way to get the entire stack running with minimal configuration.
+
+**Step 1: Clone the repository**
+```bash
+git clone https://github.com/uppalriya371-blip/TeamBeta.git
+cd TeamBeta
+```
+
+**Step 2: Start all services with Docker Compose**
+```bash
+docker compose up
+```
+
+This command will:
+- Build and start the frontend (Vite React dev server)
+- Build and start the backend (Express API server)
+- Start the BullMQ scan worker
+- Start PostgreSQL database
+- Start Redis cache & queue
+
+**Step 3: Wait for services to be ready**
+
+You'll see logs indicating when each service is ready. Wait for a message like:
+```
+api       | ✅ API Server running on http://localhost:5000
+frontend  | ✅ Vite dev server running on http://localhost:5173
+```
+
+**Step 4: Access the application**
+
+Open your browser and navigate to:
+```
+http://localhost:5173
+```
+
+**Step 5: Log in with default credentials**
+```
+Email:    admin@apiguard.io
+Password: password123
+```
+
+**To stop all services:**
+```bash
+docker compose down
+```
+
+---
+
+### Option 2: Local Development (Manual Setup)
+
+For development work or if you prefer running services locally.
+
+**Step 1: Clone the repository**
+```bash
+git clone https://github.com/uppalriya371-blip/TeamBeta.git
+cd TeamBeta
+```
+
+**Step 2: Start infrastructure services (PostgreSQL & Redis) via Docker**
+```bash
+docker compose up db redis -d
+```
+
+Wait for the containers to be ready (about 5-10 seconds).
+
+**Step 3: Set up and start the backend**
+
+In a new terminal window:
+```bash
+cd backend
+npm install
+```
+
+Create a `.env` file in the `backend/` directory (or use defaults):
+```env
+PORT=5000
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=apiguard
+DB_PORT=5432
+REDIS_HOST=localhost
+REDIS_PORT=6379
+JWT_SECRET=apiguard_super_secret_jwt_key_2026
+JWT_REFRESH_SECRET=apiguard_super_secret_jwt_refresh_key_2026
+```
+
+Start the API server:
+```bash
+node server.js
+```
+
+In another terminal, start the BullMQ worker:
+```bash
+node worker.js
+```
+
+You should see:
+```
+✅ API Server running on http://localhost:5000
+✅ Worker connected and listening for jobs
+```
+
+**Step 4: Set up and start the frontend**
+
+In a new terminal window (from the root directory):
+```bash
+npm install
+npm run dev
+```
+
+You should see:
+```
+✅ Vite dev server running on http://localhost:5173
+```
+
+**Step 5: Access the application**
+
+Open your browser and navigate to:
+```
+http://localhost:5173
+```
+
+**Step 6: Log in**
+```
+Email:    admin@apiguard.io
+Password: password123
+```
+
+**To stop services:**
+
+- Frontend: Press `Ctrl+C` in the frontend terminal
+- Backend: Press `Ctrl+C` in each backend terminal
+- Database & Redis: 
+  ```bash
+  docker compose down
+  ```
+
+---
+
+## 📊 Service URLs & Ports
+
+When running locally, you can access the following services:
+
+| Service | URL | Port | Notes |
+|---------|-----|------|-------|
+| **Frontend** | http://localhost:5173 | 5173 | Vite React dev server |
+| **API Server** | http://localhost:5000 | 5000 | Express API endpoints |
+| **PostgreSQL** | localhost | 5432 | Database (Docker only) |
+| **Redis** | localhost | 6379 | Cache & queue (Docker only) |
+| **Worker** | — | — | Background job processor (Docker/Manual) |
+
+---
+
+## 🧪 Testing the Application
+
+### Test API Endpoints
+
+**1. Register a new account:**
+```bash
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "securePassword123"
+  }'
+```
+
+**2. Login:**
+```bash
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@apiguard.io",
+    "password": "password123"
+  }'
+```
+
+**3. Get current user profile (requires token):**
+```bash
+curl -X GET http://localhost:5000/api/auth/me \
+  -H "Authorization: Bearer <your_access_token>"
+```
+
+### Manual Testing via UI
+
+1. Log in with default credentials
+2. Navigate to **Scan** → Create a new scan
+3. Enter an API endpoint (e.g., `https://api.example.com/users`)
+4. Click "Start Scan" and watch real-time progress
+5. Review vulnerability findings
+6. Generate a PDF report from the Reports tab
 
 ---
 
@@ -320,6 +508,54 @@ system_tuning (key-value config store)
 | `REDIS_PORT` | `6379` | Redis port |
 | `JWT_SECRET` | `apiguard_super_secret_jwt_key_2026` | JWT signing secret |
 | `JWT_REFRESH_SECRET` | `apiguard_super_secret_jwt_refresh_key_2026` | JWT refresh token secret |
+
+---
+
+## 🆘 Troubleshooting
+
+### Docker Services Won't Start
+```bash
+# Clean up old containers and volumes
+docker compose down -v
+
+# Rebuild and start fresh
+docker compose up --build
+```
+
+### Port Already in Use
+```bash
+# Kill process on port 5173 (frontend)
+lsof -ti:5173 | xargs kill -9
+
+# Kill process on port 5000 (API)
+lsof -ti:5000 | xargs kill -9
+
+# Kill process on port 5432 (database)
+lsof -ti:5432 | xargs kill -9
+```
+
+### Database Connection Errors
+```bash
+# Check if PostgreSQL container is running
+docker ps | grep postgres
+
+# View database logs
+docker compose logs db
+```
+
+### Can't Access API from Frontend
+- Ensure API is running on `http://localhost:5000`
+- Check that CORS is enabled in `backend/server.js`
+- Verify the Vite proxy is configured in `vite.config.js`
+
+### Worker Not Processing Jobs
+```bash
+# Check Redis is running
+docker ps | grep redis
+
+# View worker logs
+docker compose logs worker
+```
 
 ---
 
